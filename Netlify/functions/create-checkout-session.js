@@ -1,4 +1,4 @@
-// This is your new serverless function that will handle the Stripe checkout process.
+// This is your new serverless function that will handle the Stripe checkout.
 // You would save this file as 'create-checkout-session.js' inside a 'netlify/functions' folder in your project.
 
 // Import the Stripe library
