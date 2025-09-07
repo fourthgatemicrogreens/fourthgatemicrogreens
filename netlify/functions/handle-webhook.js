@@ -1,7 +1,21 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const admin = require('firebase-admin');
+
+// Initialize Firebase only once
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    }),
+  });
+}
+
+const db = admin.firestore();
 
 exports.config = {
-  bodyParser: false, // Required for Stripe webhook signature verification
+  bodyParser: false,
 };
 
 exports.handler = async (event) => {
@@ -9,7 +23,6 @@ exports.handler = async (event) => {
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   let stripeEvent;
-
   try {
     stripeEvent = stripe.webhooks.constructEvent(event.body, sig, endpointSecret);
   } catch (err) {
@@ -17,33 +30,24 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: `Webhook Error: ${err.message}` };
   }
 
-  switch (stripeEvent.type) {
-    case 'checkout.session.completed':
-      const session = stripeEvent.data.object;
+  if (stripeEvent.type === 'checkout.session.completed') {
+    const session = stripeEvent.data.object;
 
-      // Extract details
-      const email = session.customer_details?.email || 'N/A';
-      const amount = session.amount_total
-        ? `$${(session.amount_total / 100).toFixed(2)}`
-        : 'N/A';
+    const orderData = {
+      email: session.customer_details?.email || 'N/A',
+      amount: session.amount_total ? session.amount_total / 100 : 0,
+      address: session.customer_details?.address || {},
+      status: session.payment_status,
+      sessionId: session.id,
+      createdAt: new Date(),
+    };
 
-      const address = session.customer_details?.address;
-      const formattedAddress = address
-        ? `${address.line1 || ''} ${address.line2 || ''}, ${address.city || ''}, ${address.state || ''} ${address.postal_code || ''}, ${address.country || ''}`
-        : 'No address provided';
-
-      console.log("✅ Payment successful:");
-      console.log(`   Email: ${email}`);
-      console.log(`   Amount Paid: ${amount}`);
-      console.log(`   Shipping Address: ${formattedAddress}`);
-      console.log(`   Session ID: ${session.id}`);
-
-      // 👉 TODO: Save order to DB or send email here
-
-      break;
-
-    default:
-      console.log(`ℹ️ Unhandled event type: ${stripeEvent.type}`);
+    try {
+      await db.collection('orders').add(orderData);
+      console.log("✅ Order saved to Firestore:", orderData);
+    } catch (err) {
+      console.error("❌ Firestore error:", err);
+    }
   }
 
   return { statusCode: 200, body: JSON.stringify({ received: true }) };
