@@ -14,7 +14,7 @@ exports.handler = async (event, context) => {
       price_data: {
         currency: 'usd',
         product_data: { name: item.name },
-        unit_amount: item.price * 100,
+        unit_amount: item.price * 100, // Stripe expects cents
       },
       quantity: item.quantity,
     }));
@@ -23,6 +23,12 @@ exports.handler = async (event, context) => {
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
+
+      // ✅ NEW: Collect shipping addresses
+      shipping_address_collection: {
+        allowed_countries: ['US', 'CA'], // Adjust to where you ship
+      },
+
       success_url: `${YOUR_DOMAIN}/success.html`,
       cancel_url: `${YOUR_DOMAIN}/cancel.html`,
     });
