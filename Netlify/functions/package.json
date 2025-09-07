@@ -1,9 +1,0 @@
-{
-  "name": "netlify-functions",
-  "version": "1.0.0",
-  "description": "Netlify functions for Fourth Gate Microgreens",
-  "main": "create-checkout-session.mjs",
-  "dependencies": {
-    "stripe": "^14.2.0"
-  }
-}

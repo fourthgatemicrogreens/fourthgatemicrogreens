@@ -1,15 +1,10 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// Use the domain from the environment or a default for local testing
 const YOUR_DOMAIN = process.env.YOUR_DOMAIN || 'http://localhost:8888';
 
 exports.handler = async (event, context) => {
-  // Only allow POST requests
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: 'Method Not Allowed'
-    };
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
@@ -18,17 +13,15 @@ exports.handler = async (event, context) => {
     const line_items = items.map(item => ({
       price_data: {
         currency: 'usd',
-        product_data: {
-          name: item.name,
-        },
-        unit_amount: item.price * 100, // Stripe expects price in cents
+        product_data: { name: item.name },
+        unit_amount: item.price * 100,
       },
       quantity: item.quantity,
     }));
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: line_items,
+      line_items,
       mode: 'payment',
       success_url: `${YOUR_DOMAIN}/success.html`,
       cancel_url: `${YOUR_DOMAIN}/cancel.html`,
@@ -36,17 +29,13 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        sessionId: session.id,
-      })
+      body: JSON.stringify({ sessionId: session.id }),
     };
   } catch (error) {
     console.error('Stripe API Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: 'Failed to create Stripe Checkout session.'
-      })
+      body: JSON.stringify({ error: 'Failed to create Stripe Checkout session.' }),
     };
   }
 };
