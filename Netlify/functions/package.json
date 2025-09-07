@@ -1,8 +1,9 @@
 {
-  "name": "stripe-checkout-function",
+  "name": "netlify-functions",
   "version": "1.0.0",
-  "description": "A Netlify function for creating Stripe checkout sessions.",
+  "description": "Netlify functions for Fourth Gate Microgreens",
+  "main": "create-checkout-session.mjs",
   "dependencies": {
-    "stripe": "^18.5.0"
+    "stripe": "^14.2.0"
   }
 }
