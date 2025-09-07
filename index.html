@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fourth Gate Microgreens</title>
+<script src="https://js.stripe.com/v3/"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Custom styles to elevate the design */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #F8F7F3; /* Soft, organic off-white */
+    color: #2D4026; /* Deep forest green for text */
+    overflow-x: hidden;
+    /* A more subtle and refined custom cursor */
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%233B7235' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z'/%3E%3Ccircle fill='%23F8F7F3' cx='12' cy='12' r='3'/%3E%3C/svg%3E") 12 12, auto;
+}
+
+/* Typography and Animations */
+.hero-headline {
+    font-family: 'Playfair Display', serif;
+    background: linear-gradient(120deg, #d1e8d1, #ffffff, #c8d7c8, #b3dcb3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 300% auto;
+    animation: text-gradient 20s linear infinite;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.section-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    background: linear-gradient(120deg, #3B7235, #5a8a5a, #4a744a, #3B7235);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% auto;
+    animation: text-gradient 15s linear infinite;
+}
+
+@keyframes text-gradient {
+    to { background-position: -200% center; }
+}
+
+/* Modal Enhancements */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(20, 30, 20, 0.5);
+    backdrop-filter: blur(16px);
+    z-index: 100;
+    display: none; /* Initially hidden */
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.modal-content {
+    background-color: #FDFCF8;
+    padding: 2.5rem;
+    border-radius: 2rem;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+    position: relative;
+    max-width: 600px;
+    width: 90%;
+    animation: slideUp 0.5s ease-out;
+    border: 1px solid rgba(0,0,0,0.05);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    font-size: 2.5rem;
+    font-weight: 200;
+    cursor: pointer;
+    color: #2D4026;
+    transition: transform 0.2s, color 0.2s;
+}
+.modal-close:hover {
+    transform: rotate(90deg);
+    color: #3B7235;
+}
+
+/* Keyframe animations for modal and alerts */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* Button Styles */
+.btn-primary {
+    background-color: #3B7235;
+    color: #F8F7F3;
+    font-weight: 600;
+    padding: 0.85rem 2.25rem;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 20px rgba(59, 114, 53, 0.3);
+    border: 1px solid transparent;
+}
+.btn-primary:hover {
+    background-color: #2D5829;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(59, 114, 53, 0.4);
+}
+.btn-primary:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+    transform: translateY(0);
+    box-shadow: none;
+}
+.btn-secondary {
+    background-color: #fff;
+    color: #2D4026;
+    font-weight: 600;
+    padding: 0.85rem 2.25rem;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8d9;
+}
+.btn-secondary:hover {
+    background-color: #f2f9f2;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+
+/* Card Selection Styles */
+.selectable-card {
+    background-color: #fff;
+    border: 2px solid #e2e8d9;
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+}
+.selectable-card:hover {
+    border-color: #a3b9a3;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+.selectable-card.selected {
+    border-color: #3B7235;
+    background-color: #F2F9F2;
+    box-shadow: 0 8px 20px rgba(59, 114, 53, 0.2);
+    transform: translateY(-2px);
+}
+.selectable-card.selected::after {
+    content: '✔';
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: #3B7235;
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+
+/* Floating animation for hero button */
+.floating { animation: floating 4s ease-in-out infinite; }
+@keyframes floating {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+/* Scroll-triggered Animations */
+.reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Custom Box Builder Styles */
+.crop-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background-color: white;
+    border-radius: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-bottom: 0.75rem;
+}
+.qty-btn {
+    background-color: #E2E8D9;
+    color: #2D4026;
+    font-weight: 500;
+    border-radius: 9999px;
+    width: 2.25rem;
+    height: 2.25rem;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.qty-btn:hover {
+    background-color: #D2DBC9;
+    transform: scale(1.1);
+}
+.add-btn {
+    background: #3B7235;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.add-btn:hover {
+    background: #2D5829;
+    transform: rotate(90deg);
+}
+</style>
+</head>
+<body class="text-stone-900">
+
+<!-- Navigation -->
+<header class="absolute w-full z-50 px-6 py-5 flex justify-between items-center text-white">
+    <a href="#" class="text-3xl font-bold tracking-tighter" style="font-family: 'Playfair Display', serif;">Fourth Gate</a>
+    <nav class="hidden md:flex space-x-8 font-medium items-center">
+        <a href="#how-it-works" class="hover:text-amber-100 transition">How It Works</a>
+        <a href="#about-us" class="hover:text-amber-100 transition">Our Story</a>
+        <a href="#subscription" class="hover:text-amber-100 transition">Plans</a>
+        <button id="nav-order-btn" class="btn-secondary !text-sm !py-2 !px-5">Order Now</button>
+    </nav>
+    <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg bg-white/20 text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+    </button>
+</header>
+<!-- Mobile Menu -->
+<div id="mobile-menu" class="fixed inset-0 bg-[#2D4026] z-50 transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden">
+    <div class="flex flex-col items-center justify-center h-full space-y-8 text-white text-2xl font-medium">
+        <a href="#how-it-works" class="mobile-nav-link">How It Works</a>
+        <a href="#about-us" class="mobile-nav-link">Our Story</a>
+        <a href="#subscription" class="mobile-nav-link">Plans</a>
+        <button class="btn-primary mt-8 mobile-nav-link">Order Now</button>
+    </div>
+</div>
+
+
+<!-- Hero Section -->
+<section class="relative h-screen flex items-center justify-center text-center text-white bg-cover bg-center" style="background-image: url('https://iili.io/KnBDCcN.md.webp');">
+    <div class="absolute inset-0 bg-black/50 z-10"></div>
+    <div class="relative z-20 max-w-4xl px-6">
+        <h1 class="text-6xl md:text-8xl hero-headline">
+            Open the Gate to Health.
+        </h1>
+        <p class="mt-6 text-xl md:text-2xl font-light text-gray-200 max-w-2xl mx-auto">
+            Nutrient-dense, farm-fresh microgreens delivered from our indoor farm right to your door.
+        </p>
+        <div class="mt-12 flex justify-center">
+            <button id="hero-order-btn" class="btn-primary floating">
+                Choose Your Box
+            </button>
+        </div>
+    </div>
+</section>
+
+<main class="relative z-10 bg-[#F8F7F3]">
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-24 bg-[#E8F0E4]">
+        <div class="max-w-6xl mx-auto px-6 text-center">
+            <h2 class="text-4xl md:text-5xl section-title reveal">So Fresh, So Simple.</h2>
+            <p class="mt-4 text-lg text-gray-800 reveal">Getting started with fresh microgreens is easy.</p>
+            <div class="mt-20 grid grid-cols-1 md:grid-cols-3 gap-10">
+                <!-- Step 1 -->
+                <div class="p-10 rounded-3xl transition transform hover:-translate-y-2 bg-white shadow-xl reveal">
+                    <div class="w-20 h-20 mx-auto flex items-center justify-center bg-green-100 rounded-full mb-6">
+                        <svg class="w-10 h-10 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold">1. Select Your Plan</h3>
+                    <p class="mt-3 text-stone-700">Choose from curated boxes or build your own. Delivered weekly, bi-weekly, or monthly.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="p-10 rounded-3xl transition transform hover:-translate-y-2 bg-white shadow-xl reveal" style="transition-delay: 150ms;">
+                    <div class="w-20 h-20 mx-auto flex items-center justify-center bg-green-100 rounded-full mb-6">
+                         <svg class="w-10 h-10 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold">2. We Harvest & Deliver</h3>
+                    <p class="mt-3 text-stone-700">We harvest your microgreens at peak freshness and deliver them straight to your doorstep.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="p-10 rounded-3xl transition transform hover:-translate-y-2 bg-white shadow-xl reveal" style="transition-delay: 300ms;">
+                    <div class="w-20 h-20 mx-auto flex items-center justify-center bg-green-100 rounded-full mb-6">
+                         <svg class="w-10 h-10 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold">3. Enjoy Peak Nutrition</h3>
+                    <p class="mt-3 text-stone-700">Elevate your meals with unparalleled flavor, vibrant color, and a powerful nutrient boost.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Us Section -->
+    <section id="about-us" class="py-24 bg-white text-[#2D4026]">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-4xl md:text-5xl section-title text-center reveal">Grown With Passion, For You.</h2>
+            <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="space-y-6 reveal">
+                    <p class="text-lg leading-relaxed">
+                        Fourth Gate Microgreens was founded on a simple belief: everyone deserves access to the freshest, most nutrient-dense food possible. Our journey began with a small indoor farm and a passion for sustainable agriculture.
+                    </p>
+                    <p class="text-lg leading-relaxed">
+                        We are committed to a healthier planet, using only organic, earth-friendly methods to bring the vibrant power of nature straight to your table.
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-4 reveal" style="transition-delay: 150ms;">
+                    <img src="https://images.pexels.com/photos/5958017/pexels-photo-5958017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Microgreens being harvested" class="rounded-3xl shadow-xl w-full h-full object-cover aspect-[4/5]">
+                    <img src="https://images.pexels.com/photos/7248386/pexels-photo-7248386.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Trays of microgreens growing" class="rounded-3xl shadow-xl w-full h-full object-cover aspect-[4/5] mt-8">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Subscription CTA -->
+    <section id="subscription" class="py-20 bg-[#3B7235] text-white text-center">
+        <div class="max-w-4xl mx-auto px-6 reveal">
+            <h2 class="text-4xl font-bold" style="font-family: 'Playfair Display', serif;">Ready to Start Your Journey?</h2>
+            <p class="mt-4 text-lg font-light text-green-100">Choose your subscription plan and experience greens like never before.</p>
+            <div class="mt-8 flex justify-center">
+                <button id="cta-order-btn" class="btn-secondary">
+                    View Our Plans
+                </button>
+            </div>
+        </div>
+    </section>
+</main>
+<!-- Footer -->
+<footer class="bg-[#2D4026] text-gray-400 py-10 text-center relative z-10">
+    <p>&copy; 2024 Fourth Gate Microgreens. All rights reserved.</p>
+</footer>
+
+<!-- Subscription Modal -->
+<div id="subscription-modal" class="modal-overlay">
+    <div class="modal-content text-[#2D4026]">
+        <span class="modal-close">&times;</span>
+
+        <!-- Step 1: Choose Custom or Preset -->
+        <div id="step-1" class="step-content">
+            <h3 class="text-3xl font-bold text-center mb-8" style="font-family: 'Playfair Display', serif;">Choose Your Box</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="selectable-card text-center" id="select-preset">
+                    <img src="https://iili.io/KoaQHt2.md.png" alt="Preset Blends" class="w-full h-32 object-cover rounded-xl mb-4">
+                    <h4 class="font-bold text-xl mb-1">Choose a Mix</h4>
+                    <p class="text-sm text-gray-500">Curated for flavor and health.</p>
+                </div>
+                <div class="selectable-card text-center" id="select-custom">
+                    <img src="https://iili.io/KoaPUv4.md.png" alt="Build Your Own" class="w-full h-32 object-cover rounded-xl mb-4">
+                    <h4 class="font-bold text-xl mb-1">Build Your Own</h4>
+                    <p class="text-sm text-gray-500">Perfectly tailored to you.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Choose Preset or Build Custom -->
+        <div id="step-2" class="step-content hidden">
+            <!-- This content will be dynamically populated -->
+        </div>
+
+        <!-- Step 3: Choose Frequency & Details -->
+        <div id="step-3" class="step-content hidden">
+             <h3 class="text-3xl font-bold text-center mb-8" style="font-family: 'Playfair Display', serif;">Final Details</h3>
+            <div class="bg-white p-6 rounded-2xl shadow-inner mb-6">
+                <h4 class="font-semibold text-lg mb-4">Your Order:</h4>
+                <div id="order-summary" class="text-gray-700 space-y-2"></div>
+                <hr class="my-4">
+                <div class="text-xl font-bold flex justify-between">
+                    <span>Total:</span>
+                    <span id="summary-total-price">$0.00</span>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h4 class="font-semibold text-lg mb-4 text-center">Delivery Frequency</h4>
+                <div class="grid grid-cols-3 gap-3" id="frequency-options">
+                    <div class="selectable-card text-center !p-3" data-frequency="Weekly" data-price-modifier="1"><h5 class="font-bold">Weekly</h5><p class="text-xs text-gray-500">Best Value</p></div>
+                    <div class="selectable-card text-center !p-3" data-frequency="Bi-weekly" data-price-modifier="1.05"><h5 class="font-bold">Bi-weekly</h5><p class="text-xs text-gray-500">+5%</p></div>
+                    <div class="selectable-card text-center !p-3" data-frequency="Monthly" data-price-modifier="1.1"><h5 class="font-bold">Monthly</h5><p class="text-xs text-gray-500">+10%</p></div>
+                </div>
+            </div>
+
+            <form id="details-form">
+                <input type="text" placeholder="Full Name" class="w-full p-3 mb-4 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
+                <input type="email" placeholder="Email Address" class="w-full p-3 mb-4 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
+                <button type="submit" class="w-full btn-primary">Proceed to Payment</button>
+            </form>
+            <button class="mt-6 text-gray-500 hover:text-gray-700 transition w-full text-center" onclick="prevStep()">← Back</button>
+        </div>
+
+        <!-- Message/Alert Box -->
+         <div id="message-box" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center p-8 rounded-2xl hidden">
+            <div class="text-center">
+                <p id="message-text" class="text-lg font-semibold text-stone-800"></p>
+                <button class="mt-4 btn-secondary" id="message-ok-btn">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// --- App State & Constants ---
+const state = {
+    currentStep: 1,
+    orderType: null, // 'preset' or 'custom'
+    selectedPreset: null,
+    selectedPresetSize: null, // 8 or 16
+    customBox: {}, // { cropName: quantity of 4oz units }
+    deliveryFrequency: null,
+    totalPrice: 0,
+};
+
+const PRESETS = [
+    { id: 'super_green', name: 'Super Green Mix', contents: 'Sunflower, Pea, Broccoli & Kale', img: 'https://iili.io/KocaUUQ.md.png' },
+    { id: 'spicy_green', name: 'Spicy Green Mix', contents: 'Purple Radish, Purple Kohlrabi & Arugula', img: 'https://iili.io/KocaUUQ.md.png' }
+];
+const CROPS = ['Sunflower', 'Pea', 'Broccoli', 'Purple Radish', 'Kale', 'Purple Kohlrabi'];
+
+// --- DOM Elements ---
+const modal = document.getElementById('subscription-modal');
+const mobileMenu = document.getElementById('mobile-menu');
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+const orderButtons = [
+    document.getElementById('nav-order-btn'),
+    document.getElementById('hero-order-btn'),
+    document.getElementById('cta-order-btn')
+];
+const messageBox = document.getElementById('message-box');
+const messageOkBtn = document.getElementById('message-ok-btn');
+const detailsForm = document.getElementById('details-form');
+const selectPresetBtn = document.getElementById('select-preset');
+const selectCustomBtn = document.getElementById('select-custom');
+const modalCloseBtn = document.querySelector('.modal-close');
+
+
+// --- Modal & Navigation Logic ---
+function openModal() {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    resetStateAndUI();
+    renderStep(1);
+}
+
+function closeModal() {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+function resetStateAndUI() {
+    state.currentStep = 1;
+    state.orderType = null;
+    state.selectedPreset = null;
+    state.selectedPresetSize = null;
+    state.customBox = {};
+    state.deliveryFrequency = null;
+    state.totalPrice = 0;
+    // Reset selection visuals
+    document.querySelectorAll('#frequency-options .selected').forEach(el => el.classList.remove('selected'));
+    document.getElementById('details-form').reset();
+}
+
+function renderStep(step) {
+    state.currentStep = step;
+    const steps = modal.querySelectorAll('.step-content');
+    steps.forEach(s => s.classList.add('hidden'));
+
+    const targetStepEl = document.getElementById('step-' + step);
+    if (step === 2) {
+        const step2Content = document.getElementById('step-2');
+        // If a preset is chosen but not a size, show size selection
+        if (state.orderType === 'preset' && state.selectedPreset && !state.selectedPresetSize) {
+             step2Content.innerHTML = generatePresetSizeSelectionHTML();
+        } else {
+            // Otherwise, show the initial choice for step 2
+            state.selectedPreset = null; // Clear selections if we're going back to this view
+            state.selectedPresetSize = null;
+            step2Content.innerHTML = state.orderType === 'preset' ? generatePresetSelectionHTML() : generateCustomBuilderHTML();
+        }
+
+        if(state.orderType === 'custom') {
+            updateCustomBuilderUI();
+        }
+        addStep2EventListeners();
+    }
+    targetStepEl.classList.remove('hidden');
+}
+
+function prevStep() {
+    if (state.currentStep === 3) {
+        state.selectedPresetSize = null; // Clear size when going back from final details
+        renderStep(2);
+    } else if (state.currentStep === 2) {
+        // This could be from size selection or custom builder, reset preset either way
+        state.selectedPreset = null;
+        renderStep(1);
+    }
+}
+
+function backToPresetList() {
+    state.selectedPreset = null;
+    state.selectedPresetSize = null;
+    renderStep(2);
+}
+
+function handleOrderTypeSelect(type) {
+    state.orderType = type;
+    renderStep(2);
+}
+
+function handlePresetSelect(presetId) {
+    state.selectedPreset = PRESETS.find(p => p.id === presetId);
+    renderStep(2); // Re-render step 2, which will now show size selection
+}
+
+function handlePresetSizeSelect(size) {
+    state.selectedPresetSize = size;
+    renderStep(3);
+    updateSummaryAndPrice();
+}
+
+function handleCustomCropChange(cropName, action) {
+    if (action === 'add') {
+        if (!state.customBox[cropName] && Object.keys(state.customBox).length >= 4) {
+            showMessageBox('You can select a maximum of 4 different types of greens for a custom box.');
+            return;
+        }
+        state.customBox[cropName] = (state.customBox[cropName] || 0) + 1;
+    } else if (action === 'remove' && state.customBox[cropName] > 0) {
+        state.customBox[cropName]--;
+        if (state.customBox[cropName] === 0) {
+            delete state.customBox[cropName];
+        }
+    }
+    updateCustomBuilderUI();
+    updateSummaryAndPrice();
+}
+
+function proceedFromCustom() {
+    if (Object.keys(state.customBox).length === 0) {
+        showMessageBox('Please add at least one item to your box.');
+        return;
+    }
+    renderStep(3);
+    updateSummaryAndPrice();
+}
+
+
+function updateCustomBuilderUI() {
+    const customBoxEl = document.getElementById('custom-box-items');
+    if (!customBoxEl) return;
+    customBoxEl.innerHTML = ''; // Clear current items
+
+    if (Object.keys(state.customBox).length === 0) {
+         customBoxEl.innerHTML = `<p class="text-sm text-gray-400 text-center mt-12">Your items will appear here.</p>`;
+         return;
+    }
+
+    for (const [crop, qty] of Object.entries(state.customBox)) {
+        customBoxEl.innerHTML += `
+            <div class="crop-option">
+                <span class="text-sm">${crop} (${qty * 4}oz)</span>
+                <div class="flex items-center gap-3">
+                    <button class="qty-btn !w-7 !h-7" onclick="handleCustomCropChange('${crop}', 'remove')">-</button>
+                    <span class="font-bold w-4 text-center">${qty}</span>
+                    <button class="qty-btn !w-7 !h-7" onclick="handleCustomCropChange('${crop}', 'add')">+</button>
+                </div>
+            </div>`;
+    }
+}
+
+function generatePresetSelectionHTML() {
+    return `
+        <h3 class="text-3xl font-bold text-center mb-8" style="font-family: 'Playfair Display', serif;">Choose a Mix</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        ${PRESETS.map(p => `
+            <div class="selectable-card text-center" data-preset-id="${p.id}">
+                <img src="${p.img}" alt="${p.name}" class="w-full h-32 object-cover rounded-xl mb-4">
+                <h4 class="font-bold text-xl mb-1">${p.name}</h4>
+                <p class="text-sm text-gray-500">${p.contents}</p>
+            </div>
+        `).join('')}
+        </div>
+        <button class="mt-8 text-gray-500 hover:text-gray-700 transition w-full text-center" onclick="prevStep()">← Back</button>
+    `;
+}
+
+function generatePresetSizeSelectionHTML() {
+    if (!state.selectedPreset) return '';
+    return `
+        <h3 class="text-3xl font-bold text-center mb-2" style="font-family: 'Playfair Display', serif;">Choose a Size</h3>
+        <p class="text-center text-gray-500 mb-6">${state.selectedPreset.name}</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="selectable-card text-center" data-size="8">
+                <h4 class="font-bold text-xl">8oz Box</h4>
+                <p class="text-sm text-gray-500">Good for 1-2 people</p>
+                <p class="mt-2 text-lg font-semibold">$15.00</p>
+            </div>
+            <div class="selectable-card text-center" data-size="16">
+                <h4 class="font-bold text-xl">16oz Box</h4>
+                <p class="text-sm text-gray-500">Perfect for families</p>
+                <p class="mt-2 text-lg font-semibold">$25.00</p>
+            </div>
+        </div>
+        <button class="mt-8 text-gray-500 hover:text-gray-700 transition w-full text-center" onclick="backToPresetList()">← Back to Mix Selection</button>
+    `;
+}
+
+
+function generateCustomBuilderHTML() {
+    return `
+        <h3 class="text-3xl font-bold text-center mb-2" style="font-family: 'Playfair Display', serif;">Build Your Box</h3>
+        <p class="text-center text-gray-500 mb-6 text-sm">Each item is a 4oz unit. <br>An 8oz box (2 units) is <strong>$15</strong>, and a 16oz box (4 units) is <strong>$25</strong>.</p>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+                <h4 class="font-semibold text-center mb-3">Available Greens</h4>
+                <div class="space-y-2">
+                ${CROPS.map(crop => `
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                        <span>${crop}</span>
+                        <button class="add-btn" data-crop="${crop}"></button>
+                    </div>
+                `).join('')}
+                </div>
+            </div>
+            <div>
+                <h4 class="font-semibold text-center mb-3">Your Box</h4>
+                <div id="custom-box-items" class="bg-gray-100 p-3 rounded-lg min-h-[150px]">
+                    <p class="text-sm text-gray-400 text-center mt-12">Your items will appear here.</p>
+                </div>
+            </div>
+        </div>
+
+        <button class="w-full btn-primary" onclick="proceedFromCustom()">Proceed</button>
+        <button class="mt-6 text-gray-500 hover:text-gray-700 transition w-full text-center" onclick="prevStep()">← Back</button>
+    `;
+}
+
+// --- Price & Summary Calculation ---
+function updateSummaryAndPrice() {
+    const summaryEl = document.getElementById('order-summary');
+    const totalEl = document.getElementById('summary-total-price');
+    let basePrice = 0;
+    let summaryHTML = '';
+
+    if (state.orderType === 'preset' && state.selectedPreset && state.selectedPresetSize) {
+        basePrice = state.selectedPresetSize === 8 ? 15.00 : 25.00;
+        summaryHTML = `<p><strong>${state.selectedPreset.name} (${state.selectedPresetSize}oz)</strong></p>`;
+    } else if (state.orderType === 'custom') {
+        let totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
+
+        if (totalUnits > 0) {
+            if (totalUnits === 1) basePrice = 8;
+            else if (totalUnits === 2) basePrice = 15;
+            else if (totalUnits === 3) basePrice = 15 + 8;
+            else if (totalUnits === 4) basePrice = 25;
+            else basePrice = 25 + (totalUnits - 4) * 7;
+        }
+
+        let totalOz = totalUnits * 4;
+        summaryHTML = `<p><strong>Custom Box (${totalOz}oz)</strong></p>`;
+        if(totalUnits > 0) {
+            for (const [crop, qty] of Object.entries(state.customBox)) {
+                summaryHTML += `<p class="pl-2 text-sm text-gray-600">${qty} x ${crop} (4oz)</p>`;
+            }
+        }
+    }
+
+    let finalPrice = basePrice;
+    const freqCard = document.querySelector('#frequency-options .selected');
+    if (freqCard) {
+        const modifier = parseFloat(freqCard.dataset.priceModifier);
+        finalPrice *= modifier;
+        state.deliveryFrequency = freqCard.dataset.frequency;
+    } else {
+        state.deliveryFrequency = null;
+    }
+
+    state.totalPrice = finalPrice;
+    summaryEl.innerHTML = summaryHTML;
+    totalEl.textContent = `$${finalPrice.toFixed(2)}`;
+}
+
+// --- Event Listeners ---
+function addStep2EventListeners() {
+    const presetCards = document.querySelectorAll('#step-2 [data-preset-id]');
+    if (presetCards.length > 0) {
+        presetCards.forEach(card => {
+            card.addEventListener('click', () => handlePresetSelect(card.dataset.presetId));
+        });
+    }
+
+    const sizeCards = document.querySelectorAll('#step-2 [data-size]');
+    if (sizeCards.length > 0) {
+         sizeCards.forEach(card => {
+            card.addEventListener('click', () => handlePresetSizeSelect(parseInt(card.dataset.size)));
+        });
+    }
+
+    const addBtns = document.querySelectorAll('#step-2 .add-btn');
+    if (addBtns.length > 0) {
+        addBtns.forEach(btn => {
+            btn.addEventListener('click', () => handleCustomCropChange(btn.dataset.crop, 'add'));
+        });
+    }
+}
+
+async function handleFormSubmit(event) {
+    event.preventDefault();
+
+    if (!state.deliveryFrequency) {
+        showMessageBox('Please select a delivery frequency.');
+        return;
+    }
+    if (state.totalPrice <= 0) {
+        showMessageBox('Your box is empty. Please add some items.');
+        return;
+    }
+
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Processing...';
+
+    try {
+        // This is a placeholder URL. You will need to replace this with the actual URL of your backend server.
+        const response = await fetch('/create-checkout-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(state),
+        });
+
+        const session = await response.json();
+
+        if (session.error) {
+            showMessageBox(session.error);
+            submitButton.disabled = false;
+            submitButton.textContent = 'Proceed to Payment';
+            return;
+        }
+
+        // IMPORTANT: Replace with your actual Stripe publishable key.
+        const stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx'); // Example Test Key
+        const result = await stripe.redirectToCheckout({
+            sessionId: session.id
+        });
+
+        if (result.error) {
+            showMessageBox(result.error.message);
+            submitButton.disabled = false;
+            submitButton.textContent = 'Proceed to Payment';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessageBox('Could not connect to the payment server. Please try again later.');
+        submitButton.disabled = false;
+        submitButton.textContent = 'Proceed to Payment';
+    }
+}
+
+function showMessageBox(message) {
+    document.getElementById('message-text').textContent = message;
+    messageBox.classList.remove('hidden');
+}
+function closeMessageBox() {
+    messageBox.classList.add('hidden');
+}
+
+// Initial Setup
+document.addEventListener('DOMContentLoaded', () => {
+    orderButtons.forEach(btn => btn.addEventListener('click', openModal));
+    modalCloseBtn.addEventListener('click', closeModal);
+    selectPresetBtn.addEventListener('click', () => handleOrderTypeSelect('preset'));
+    selectCustomBtn.addEventListener('click', () => handleOrderTypeSelect('custom'));
+    messageOkBtn.addEventListener('click', closeMessageBox);
+    detailsForm.addEventListener('submit', handleFormSubmit);
+
+    document.getElementById('frequency-options').addEventListener('click', e => {
+        const card = e.target.closest('.selectable-card');
+        if (card) {
+            document.querySelectorAll('#frequency-options .selectable-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            updateSummaryAndPrice();
+        }
+    });
+
+    // Mobile Menu Toggle
+    mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('-translate-x-full');
+    });
+    mobileNavLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            mobileMenu.classList.add('-translate-x-full');
+            if(link.textContent === 'Order Now') {
+                openModal();
+            }
+        });
+    });
+
+    // Scroll reveal animation
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+});
+</script>
+
+</body>
+</html>
