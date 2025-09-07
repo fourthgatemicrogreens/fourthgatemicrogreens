@@ -771,7 +771,7 @@ async function handleFormSubmit(event) {
         }
 
         // IMPORTANT: Replace with your actual Stripe publishable key.
-        const stripe = Stripe('pk_test_51P8i4X054W6g6D0Y1yv0u8H0jV645D0846h5L8sL8u8L5c084hY0lC04W6g6D0Y1yv0u8H0jV645D0846h5L8sL8u8L5c0'); 
+        const stripe = Stripe('pk_test_51S3ncnQQDP18MPc4GR7ywjp4cUpLnGYxKJjbbtacE2BM8pTm4ce6uxnXVjFQrHkI572Cm3zoFQmvIPJbWW48kaGW00p3PJtsRW'); 
         const result = await stripe.redirectToCheckout({
             sessionId: session.sessionId // Use sessionId from backend response
         });
@@ -804,7 +804,12 @@ document.addEventListener('DOMContentLoaded', () => {
     selectPresetBtn.addEventListener('click', () => handleOrderTypeSelect('preset'));
     selectCustomBtn.addEventListener('click', () => handleOrderTypeSelect('custom'));
     messageOkBtn.addEventListener('click', closeMessageBox);
-    detailsForm.addEventListener('submit', handleFormSubmit);
+    
+    // Check if the element exists before adding a listener
+    const detailsFormElement = document.getElementById('details-form');
+    if (detailsFormElement) {
+        detailsFormElement.addEventListener('submit', handleFormSubmit);
+    }
 
     document.getElementById('frequency-options').addEventListener('click', e => {
         const card = e.target.closest('.selectable-card');
