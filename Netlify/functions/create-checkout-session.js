@@ -1,8 +1,10 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+// Use the domain from the environment or a default for local testing
 const YOUR_DOMAIN = process.env.YOUR_DOMAIN || 'http://localhost:8888';
 
 exports.handler = async (event, context) => {
+  // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
