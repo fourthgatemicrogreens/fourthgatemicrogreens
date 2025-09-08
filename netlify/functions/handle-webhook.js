@@ -48,16 +48,16 @@ exports.handler = async (event) => {
       await db.collection('orders').add(orderData);
       console.log("✅ Order saved:", orderData);
 
-      // --- HTML Email Templates ---
+      // Build shipping address HTML
       const addressHTML = `
         ${orderData.address.line1 || ""} ${orderData.address.line2 || ""}<br>
         ${orderData.address.city || ""}, ${orderData.address.state || ""} ${orderData.address.postal_code || ""}<br>
         ${orderData.address.country || ""}
       `;
 
-      // Business email (to you)
+      // --- Business email ---
       const msg = {
-        to: "fourthgatemicrogreens@gmail.com", // your inbox
+        to: "fourthgatemicrogreens@gmail.com",
         from: process.env.SENDGRID_FROM_EMAIL,
         subject: `🌱 New Order - ${orderData.email}`,
         html: `
@@ -75,25 +75,38 @@ exports.handler = async (event) => {
       await sgMail.send(msg);
       console.log("📧 Business email sent");
 
-      // Customer confirmation email
+      // --- Customer confirmation email (branded) ---
       if (orderData.email && orderData.email !== "N/A") {
         const customerMsg = {
           to: orderData.email,
           from: process.env.SENDGRID_FROM_EMAIL,
           subject: "🌱 Your Fourth Gate Microgreens Order Confirmation",
           html: `
-            <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #eee; border-radius:10px;">
-              <h1 style="color:#2D4026;">Thank you for your order! 🌱</h1>
-              <p>Hi there,</p>
-              <p>We’ve received your payment of <strong>$${orderData.amount}</strong> and your order is being prepared.</p>
-              <h3>Shipping Address</h3>
-              <p>${addressHTML}</p>
-              <h3>Order Details</h3>
-              <p><strong>Order ID:</strong> ${orderData.sessionId}</p>
-              <p><strong>Status:</strong> ${orderData.status}</p>
-              <hr>
-              <p style="color:#666;">We’ll notify you when your microgreens are on their way.<br>
-              — The Fourth Gate Team 🌱</p>
+            <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #eee; border-radius:10px; background:#f8f7f3;">
+              <!-- Header -->
+              <div style="text-align:center; padding-bottom:20px; border-bottom:2px solid #3B7235;">
+                <h1 style="margin:0; font-size:28px; color:#3B7235;">Fourth Gate Microgreens</h1>
+                <p style="margin:0; font-size:14px; color:#666;">Fresh, local, farm-to-table greens 🌱</p>
+              </div>
+
+              <!-- Body -->
+              <div style="padding:20px 0;">
+                <h2 style="color:#2D4026;">Thank you for your order!</h2>
+                <p>We’ve received your payment of <strong>$${orderData.amount}</strong>. Your order is now being prepared.</p>
+
+                <h3 style="margin-top:20px; color:#3B7235;">📦 Shipping Address</h3>
+                <p style="margin:0 0 10px 0;">${addressHTML}</p>
+
+                <h3 style="margin-top:20px; color:#3B7235;">🧾 Order Details</h3>
+                <p style="margin:0;"><strong>Order ID:</strong> ${orderData.sessionId}</p>
+                <p style="margin:0;"><strong>Status:</strong> ${orderData.status}</p>
+              </div>
+
+              <!-- Footer -->
+              <div style="text-align:center; border-top:2px solid #3B7235; padding-top:15px; margin-top:20px; font-size:13px; color:#666;">
+                <p>We’ll let you know when your microgreens are on their way 🌱</p>
+                <p>— The Fourth Gate Team</p>
+              </div>
             </div>
           `,
         };
