@@ -2,7 +2,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const YOUR_DOMAIN = process.env.YOUR_DOMAIN || 'http://localhost:8888';
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -19,33 +19,33 @@ exports.handler = async (event, context) => {
     }
 
     const session = await stripe.checkout.sessions.create({
-      mode: 'subscription', // 👈 important
+      mode: 'subscription', // must match your Price configuration
       payment_method_types: ['card'],
       line_items: [
         {
-          price: priceId,    // 👈 your pre-created recurring Price ID
+          price: priceId,
           quantity,
         },
       ],
 
-      // ✅ Collect shipping info
+      // Collect shipping info
       shipping_address_collection: {
         allowed_countries: ['US', 'CA'],
       },
 
-      // ✅ Store box type info in subscription metadata
+      // Attach metadata to subscription
       subscription_data: {
         metadata: {
-          ...(boxMeta || {}), // e.g. { boxType:'green-mix' } or { boxType:'custom', contents:'kale,arugula' }
+          ...(boxMeta || {}),
         },
       },
 
-      // ✅ Also store metadata at session level (so webhook sees it immediately)
+      // Also attach metadata at session level
       metadata: {
         ...(boxMeta || {}),
       },
 
-      success_url: `${YOUR_DOMAIN}/success.html`,
+      success_url: `${YOUR_DOMAIN}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${YOUR_DOMAIN}/cancel.html`,
     });
 
@@ -54,10 +54,14 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ sessionId: session.id }),
     };
   } catch (error) {
-    console.error('Stripe API Error:', error);
+    console.error('❌ Stripe API Error:', error);
+
+    // Return the error message back to frontend for debugging
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to create Stripe Checkout session.' }),
+      body: JSON.stringify({
+        error: error.message || 'Failed to create Stripe Checkout session.',
+      }),
     };
   }
 };
