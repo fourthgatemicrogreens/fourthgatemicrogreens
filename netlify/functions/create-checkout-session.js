@@ -8,25 +8,41 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { items } = JSON.parse(event.body);
+    // Expecting: { priceId, quantity, boxMeta }
+    const { priceId, quantity = 1, boxMeta } = JSON.parse(event.body || '{}');
 
-    const line_items = items.map(item => ({
-      price_data: {
-        currency: 'usd',
-        product_data: { name: item.name },
-        unit_amount: item.price * 100, // Stripe expects cents
-      },
-      quantity: item.quantity,
-    }));
+    if (!priceId) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Missing priceId' }),
+      };
+    }
 
     const session = await stripe.checkout.sessions.create({
+      mode: 'subscription', // 👈 important
       payment_method_types: ['card'],
-      line_items,
-      mode: 'payment',
+      line_items: [
+        {
+          price: priceId,    // 👈 your pre-created recurring Price ID
+          quantity,
+        },
+      ],
 
-      // ✅ NEW: Collect shipping addresses
+      // ✅ Collect shipping info
       shipping_address_collection: {
-        allowed_countries: ['US', 'CA'], // Adjust to where you ship
+        allowed_countries: ['US', 'CA'],
+      },
+
+      // ✅ Store box type info in subscription metadata
+      subscription_data: {
+        metadata: {
+          ...(boxMeta || {}), // e.g. { boxType:'green-mix' } or { boxType:'custom', contents:'kale,arugula' }
+        },
+      },
+
+      // ✅ Also store metadata at session level (so webhook sees it immediately)
+      metadata: {
+        ...(boxMeta || {}),
       },
 
       success_url: `${YOUR_DOMAIN}/success.html`,
