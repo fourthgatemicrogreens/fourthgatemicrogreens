@@ -1,7 +1,8 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
+const sgMail = require('@sendgrid/mail');
 
-// Initialize Firebase only once
+// Init Firebase Admin
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -11,12 +12,12 @@ if (!admin.apps.length) {
     }),
   });
 }
-
 const db = admin.firestore();
 
-exports.config = {
-  bodyParser: false,
-};
+// Init SendGrid
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+exports.config = { bodyParser: false };
 
 exports.handler = async (event) => {
   const sig = event.headers['stripe-signature'];
@@ -26,7 +27,7 @@ exports.handler = async (event) => {
   try {
     stripeEvent = stripe.webhooks.constructEvent(event.body, sig, endpointSecret);
   } catch (err) {
-    console.error('❌ Webhook signature verification failed:', err.message);
+    console.error("❌ Webhook signature verification failed:", err.message);
     return { statusCode: 400, body: `Webhook Error: ${err.message}` };
   }
 
@@ -43,12 +44,39 @@ exports.handler = async (event) => {
     };
 
     try {
+      // Save order in Firestore
       await db.collection('orders').add(orderData);
-      console.log("✅ Order saved to Firestore:", orderData);
+      console.log("✅ Order saved:", orderData);
+
+      // Send yourself an email
+      const msg = {
+        to: "your-email@example.com", // 👈 where you want notifications
+        from: process.env.SENDGRID_FROM_EMAIL, // must be verified in SendGrid
+        subject: `🌱 New Order - ${orderData.email}`,
+        text: `
+New order received!
+
+Customer: ${orderData.email}
+Amount: $${orderData.amount}
+Status: ${orderData.status}
+
+Shipping Address:
+${orderData.address.line1 || ""} ${orderData.address.line2 || ""}
+${orderData.address.city || ""}, ${orderData.address.state || ""} ${orderData.address.postal_code || ""}
+${orderData.address.country || ""}
+
+Session ID: ${orderData.sessionId}
+        `,
+      };
+
+      await sgMail.send(msg);
+      console.log("📧 Email sent for new order");
+
     } catch (err) {
-      console.error("❌ Firestore error:", err);
+      console.error("❌ Error:", err);
     }
   }
 
   return { statusCode: 200, body: JSON.stringify({ received: true }) };
 };
+
