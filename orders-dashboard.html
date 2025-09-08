@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fourth Gate Orders Dashboard</title>
+  <script type="module">
+    // Import Firebase SDK (v9 modular)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    // TODO: Replace with your Firebase project config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Init
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // DOM elements
+    const loginForm = document.getElementById("login-form");
+    const logoutBtn = document.getElementById("logout-btn");
+    const ordersDiv = document.getElementById("orders");
+
+    // Login
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = e.target.email.value;
+      const password = e.target.password.value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert("Login failed: " + err.message);
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    // Listen to auth state
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById("auth-section").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        loadOrders();
+      } else {
+        document.getElementById("auth-section").style.display = "block";
+        document.getElementById("dashboard").style.display = "none";
+      }
+    });
+
+    // Load orders in realtime
+    function loadOrders() {
+      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+      onSnapshot(q, (snapshot) => {
+        ordersDiv.innerHTML = "";
+        snapshot.forEach((doc) => {
+          const order = doc.data();
+          ordersDiv.innerHTML += `
+            <div style="border:1px solid #ccc; padding:10px; margin:10px;">
+              <strong>Email:</strong> ${order.email}<br>
+              <strong>Amount:</strong> $${order.amount}<br>
+              <strong>Status:</strong> ${order.status}<br>
+              <strong>Address:</strong> ${order.address?.line1 || ""}, ${order.address?.city || ""}, ${order.address?.state || ""}, ${order.address?.postal_code || ""}, ${order.address?.country || ""}<br>
+              <small>Session: ${order.sessionId}</small>
+            </div>
+          `;
+        });
+      });
+    }
+  </script>
+</head>
+<body style="font-family: sans-serif; max-width: 700px; margin: auto; padding: 2rem;">
+  <h1>🌱 Fourth Gate Orders Dashboard</h1>
+
+  <!-- Login -->
+  <div id="auth-section">
+    <form id="login-form">
+      <input type="email" name="email" placeholder="Email" required /><br><br>
+      <input type="password" name="password" placeholder="Password" required /><br><br>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" style="display:none;">
+    <button id="logout-btn">Logout</button>
+    <h2>Orders</h2>
+    <div id="orders">Loading orders...</div>
+  </div>
+</body>
+</html>
