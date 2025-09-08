@@ -385,7 +385,7 @@ body {
                 <h4 class="font-semibold text-lg mb-4 text-center">Delivery Frequency</h4>
                 <div class="grid grid-cols-3 gap-3" id="frequency-options">
                     <div class="selectable-card text-center !p-3" data-frequency="Weekly" data-price-modifier="1"><h5 class="font-bold">Weekly</h5><p class="text-xs text-gray-500">Best Value</p></div>
-                    <div class="selectable-card text-center !p-3" data-frequency="Bi-weekly" data-price-modifier="1.05"><h5 class="font-bold">Bi-weekly</h5><p class="text-xs text-gray-500">+5%</p></div>
+                    <div class="selectable-card text-center !p-3" data-frequency="biweekly" data-price-modifier="1.05"><h5 class="font-bold">Bi-weekly</h5><p class="text-xs text-gray-500">+5%</p></div>
                     <div class="selectable-card text-center !p-3" data-frequency="Monthly" data-price-modifier="1.1"><h5 class="font-bold">Monthly</h5><p class="text-xs text-gray-500">+10%</p></div>
                 </div>
             </div>
@@ -414,24 +414,56 @@ body {
 const state = {
     currentStep: 1,
     orderType: null, // 'preset' or 'custom'
-    selectedPreset: null,
+    selectedPreset: null, // e.g., 'super_green'
     selectedPresetSize: null, // 8 or 16
     customBox: {}, // { cropName: quantity of 4oz units }
-    deliveryFrequency: null,
+    deliveryFrequency: null, // 'Weekly', 'Bi-weekly', 'Monthly'
     totalPrice: 0,
 };
 
-const PRESETS = [
-    { id: 'super_green', name: 'Super Green Mix', contents: 'Sunflower, Pea, Broccoli & Kale', img: 'https://iili.io/KocaUUQ.md.png', prices: { 8: 15.00, 16: 25.00 } },
-    { id: 'spicy_green', name: 'Spicy Green Mix', contents: 'Purple Radish, Purple Kohlrabi & Arugula', img: 'https://iili.io/KocaUUQ.md.png', prices: { 8: 15.00, 16: 25.00 } }
-];
-const CROPS = {
-    'Sunflower': { pricePerUnit: 8 },
-    'Pea': { pricePerUnit: 8 },
-    'Broccoli': { pricePerUnit: 8 },
-    'Purple Radish': { pricePerUnit: 8 },
-    'Kale': { pricePerUnit: 8 },
-    'Purple Kohlrabi': { pricePerUnit: 8 }
+// For UI display and price calculation
+const PRODUCTS = {
+    'super_green': { name: 'Super Green Mix', contents: 'Sunflower, Pea, Broccoli & Kale', img: 'https://iili.io/KocaUUQ.md.png', sizes: { 8: 15.00, 16: 25.00 } },
+    'spicy_green': { name: 'Spicy Green Mix', contents: 'Purple Radish, Purple Kohlrabi & Arugula', img: 'https://iili.io/KocaUUQ.md.png', sizes: { 8: 15.00, 16: 25.00 } }
+};
+const CUSTOM_PRICES = {
+    1: 8, 2: 15, 3: 23, 4: 25,
+};
+const CROP_NAMES = ['Sunflower', 'Pea', 'Broccoli', 'Purple Radish', 'Kale', 'Purple Kohlrabi'];
+
+// For Stripe Checkout Subscription
+// IMPORTANT: These are placeholder IDs. Replace with your actual Stripe Price IDs for each subscription plan.
+const PRICE_IDS = {
+    SUPER_GREEN_8OZ: {
+        weekly: 'price_1S4wv1QQDP18MPc4nFdsPROY',
+        'biweekly': 'price_1S4wxTQQDP18MPc44MHhwUJ5',
+        monthly: 'price_1S4wxTQQDP18MPc4fkRfNxDp',
+    },
+    SUPER_GREEN_16OZ: {
+        weekly: 'price_1S4x6bQQDP18MPc47IvvrDqS',
+        'biweekly': 'price_1S4x7eQQDP18MPc4yyupWYah',
+        monthly: 'price_1S4x7eQQDP18MPc49UqLB7m5',
+    },
+    SPICY_GREEN_8OZ: {
+        weekly: 'price_1S4wxyQQDP18MPc4IqtJHATF',
+        'biweekly': 'price_1S4wytQQDP18MPc4u4xPvXp9',
+        monthly: 'price_1S4wytQQDP18MPc41D5i5ZCQ',
+    },
+    SPICY_GREEN_16OZ: {
+        weekly: 'price_1S4x1aQQDP18MPc4VUG1rcFM',
+        'biweekly': 'price_1S4x3JQQDP18MPc47HahYImC',
+        monthly: 'price_1S4x3JQQDP18MPc4mcIGLbTz',
+    },
+    CUSTOM_8OZ: { // For custom boxes of 1-2 units (4-8oz)
+        weekly: 'price_1S4x9HQQDP18MPc4hxPX7vdc',
+        'biweekly': 'price_1S4xBHQQDP18MPc4l8iZlswN',
+        monthly: 'price_1S4xBHQQDP18MPc4XL9Nzkya',
+    },
+    CUSTOM_16OZ: { // For custom boxes of 3+ units (12oz+)
+        weekly: 'price_1S4x9nQQDP18MPc4MtZmQUVY',
+        'biweekly': 'price_1S4xBqQQDP18MPc4pdkz7C1J',
+        monthly: 'price_1S4xBqQQDP18MPc44YVz4D7L',
+    },
 };
 
 // --- DOM Elements ---
@@ -486,12 +518,10 @@ function renderStep(step) {
     const targetStepEl = document.getElementById('step-' + step);
     if (step === 2) {
         const step2Content = document.getElementById('step-2');
-        // If a preset is chosen but not a size, show size selection
         if (state.orderType === 'preset' && state.selectedPreset && !state.selectedPresetSize) {
              step2Content.innerHTML = generatePresetSizeSelectionHTML();
         } else {
-            // Otherwise, show the initial choice for step 2
-            state.selectedPreset = null; // Clear selections if we're going back to this view
+            state.selectedPreset = null;
             state.selectedPresetSize = null;
             step2Content.innerHTML = state.orderType === 'preset' ? generatePresetSelectionHTML() : generateCustomBuilderHTML();
         }
@@ -506,10 +536,9 @@ function renderStep(step) {
 
 function prevStep() {
     if (state.currentStep === 3) {
-        state.selectedPresetSize = null; // Clear size when going back from final details
+        state.selectedPresetSize = null; 
         renderStep(2);
     } else if (state.currentStep === 2) {
-        // This could be from size selection or custom builder, reset preset either way
         state.selectedPreset = null;
         renderStep(1);
     }
@@ -527,8 +556,8 @@ function handleOrderTypeSelect(type) {
 }
 
 function handlePresetSelect(presetId) {
-    state.selectedPreset = PRESETS.find(p => p.id === presetId);
-    renderStep(2); // Re-render step 2, which will now show size selection
+    state.selectedPreset = presetId;
+    renderStep(2); 
 }
 
 function handlePresetSizeSelect(size) {
@@ -567,7 +596,7 @@ function proceedFromCustom() {
 function updateCustomBuilderUI() {
     const customBoxEl = document.getElementById('custom-box-items');
     if (!customBoxEl) return;
-    customBoxEl.innerHTML = ''; // Clear current items
+    customBoxEl.innerHTML = ''; 
 
     if (Object.keys(state.customBox).length === 0) {
          customBoxEl.innerHTML = `<p class="text-sm text-gray-400 text-center mt-12">Your items will appear here.</p>`;
@@ -591,13 +620,16 @@ function generatePresetSelectionHTML() {
     return `
         <h3 class="text-3xl font-bold text-center mb-8" style="font-family: 'Playfair Display', serif;">Choose a Mix</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        ${PRESETS.map(p => `
-            <div class="selectable-card text-center" data-preset-id="${p.id}">
+        ${Object.keys(PRODUCTS).map(key => {
+            const p = PRODUCTS[key];
+            return `
+            <div class="selectable-card text-center" data-preset-id="${key}">
                 <img src="${p.img}" alt="${p.name}" class="w-full h-32 object-cover rounded-xl mb-4">
                 <h4 class="font-bold text-xl mb-1">${p.name}</h4>
                 <p class="text-sm text-gray-500">${p.contents}</p>
             </div>
-        `).join('')}
+            `
+        }).join('')}
         </div>
         <button class="mt-8 text-gray-500 hover:text-gray-700 transition w-full text-center" onclick="prevStep()">← Back</button>
     `;
@@ -605,19 +637,20 @@ function generatePresetSelectionHTML() {
 
 function generatePresetSizeSelectionHTML() {
     if (!state.selectedPreset) return '';
+    const product = PRODUCTS[state.selectedPreset];
     return `
         <h3 class="text-3xl font-bold text-center mb-2" style="font-family: 'Playfair Display', serif;">Choose a Size</h3>
-        <p class="text-center text-gray-500 mb-6">${state.selectedPreset.name}</p>
+        <p class="text-center text-gray-500 mb-6">${product.name}</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="selectable-card text-center" data-size="8">
                 <h4 class="font-bold text-xl">8oz Box</h4>
                 <p class="text-sm text-gray-500">Good for 1-2 people</p>
-                <p class="mt-2 text-lg font-semibold">$15.00</p>
+                <p class="mt-2 text-lg font-semibold">$${product.sizes[8].toFixed(2)}</p>
             </div>
             <div class="selectable-card text-center" data-size="16">
                 <h4 class="font-bold text-xl">16oz Box</h4>
                 <p class="text-sm text-gray-500">Perfect for families</p>
-                <p class="mt-2 text-lg font-semibold">$25.00</p>
+                <p class="mt-2 text-lg font-semibold">$${product.sizes[16].toFixed(2)}</p>
             </div>
         </div>
         <button class="mt-8 text-gray-500 hover:text-gray-700 transition w-full text-center" onclick="backToPresetList()">← Back to Mix Selection</button>
@@ -634,7 +667,7 @@ function generateCustomBuilderHTML() {
             <div>
                 <h4 class="font-semibold text-center mb-3">Available Greens</h4>
                 <div class="space-y-2">
-                ${Object.keys(CROPS).map(crop => `
+                ${CROP_NAMES.map(crop => `
                     <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                         <span>${crop}</span>
                         <button class="add-btn" data-crop="${crop}"></button>
@@ -661,37 +694,27 @@ function updateSummaryAndPrice() {
     const totalEl = document.getElementById('summary-total-price');
     let basePrice = 0;
     let summaryHTML = '';
-    const items = [];
 
     if (state.orderType === 'preset' && state.selectedPreset && state.selectedPresetSize) {
-        basePrice = state.selectedPreset.prices[state.selectedPresetSize];
-        summaryHTML = `<p><strong>${state.selectedPreset.name} (${state.selectedPresetSize}oz)</strong></p>`;
-        items.push({
-            name: `${state.selectedPreset.name} (${state.selectedPresetSize}oz)`,
-            price: basePrice,
-            quantity: 1
-        });
+        const product = PRODUCTS[state.selectedPreset];
+        basePrice = product.sizes[state.selectedPresetSize];
+        summaryHTML = `<p><strong>${product.name} (${state.selectedPresetSize}oz)</strong></p>`;
     } else if (state.orderType === 'custom') {
-        let totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
+        const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
 
         if (totalUnits > 0) {
-            if (totalUnits === 1) basePrice = 8;
-            else if (totalUnits === 2) basePrice = 15;
-            else if (totalUnits === 3) basePrice = 15 + 8;
-            else if (totalUnits === 4) basePrice = 25;
-            else basePrice = 25 + (totalUnits - 4) * 7;
+            if (CUSTOM_PRICES[totalUnits]) {
+                basePrice = CUSTOM_PRICES[totalUnits];
+            } else { // Price for > 4 units
+                basePrice = CUSTOM_PRICES[4] + (totalUnits - 4) * 7;
+            }
         }
-
+        
         let totalOz = totalUnits * 4;
         summaryHTML = `<p><strong>Custom Box (${totalOz}oz)</strong></p>`;
         if(totalUnits > 0) {
             for (const [crop, qty] of Object.entries(state.customBox)) {
                 summaryHTML += `<p class="pl-2 text-sm text-gray-600">${qty} x ${crop} (4oz)</p>`;
-                items.push({
-                    name: `${crop} (4oz)`,
-                    price: 7.00, // A fixed price per unit for custom boxes, adjust as needed
-                    quantity: qty
-                });
             }
         }
     }
@@ -707,33 +730,27 @@ function updateSummaryAndPrice() {
     }
 
     state.totalPrice = finalPrice;
-    state.items = items; // Store the items array for the fetch call
     summaryEl.innerHTML = summaryHTML;
     totalEl.textContent = `$${finalPrice.toFixed(2)}`;
 }
 
+
 // --- Event Listeners ---
 function addStep2EventListeners() {
     const presetCards = document.querySelectorAll('#step-2 [data-preset-id]');
-    if (presetCards.length > 0) {
-        presetCards.forEach(card => {
-            card.addEventListener('click', () => handlePresetSelect(card.dataset.presetId));
-        });
-    }
+    presetCards.forEach(card => {
+        card.addEventListener('click', () => handlePresetSelect(card.dataset.presetId));
+    });
 
     const sizeCards = document.querySelectorAll('#step-2 [data-size]');
-    if (sizeCards.length > 0) {
-         sizeCards.forEach(card => {
-            card.addEventListener('click', () => handlePresetSizeSelect(parseInt(card.dataset.size)));
-        });
-    }
+     sizeCards.forEach(card => {
+        card.addEventListener('click', () => handlePresetSizeSelect(parseInt(card.dataset.size)));
+    });
 
     const addBtns = document.querySelectorAll('#step-2 .add-btn');
-    if (addBtns.length > 0) {
-        addBtns.forEach(btn => {
-            btn.addEventListener('click', () => handleCustomCropChange(btn.dataset.crop, 'add'));
-        });
-    }
+    addBtns.forEach(btn => {
+        btn.addEventListener('click', () => handleCustomCropChange(btn.dataset.crop, 'add'));
+    });
 }
 
 async function handleFormSubmit(event) {
@@ -752,13 +769,47 @@ async function handleFormSubmit(event) {
     submitButton.disabled = true;
     submitButton.textContent = 'Processing...';
 
+    // --- Build payload for backend ---
+    let key;
+    let size;
+
+    if (state.orderType === 'preset') {
+        key = `${state.selectedPreset.toUpperCase()}_${state.selectedPresetSize}OZ`;
+        size = `${state.selectedPresetSize}oz`;
+    } else { // custom
+        const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
+        // Bucket custom sizes into 8oz or 16oz price tiers for simplicity.
+        // Backend receives actual contents in metadata.
+        const customSizeTier = (totalUnits <= 2) ? 8 : 16; 
+        key = `CUSTOM_${customSizeTier}OZ`;
+        size = `${totalUnits * 4}oz`; // Send actual size in metadata
+    }
+    
+    const cadenceKey = state.deliveryFrequency.toLowerCase();
+    
+    if (!PRICE_IDS[key] || !PRICE_IDS[key][cadenceKey]) {
+         console.error(`Price ID not found for key: ${key} and cadence: ${cadenceKey}`);
+         showMessageBox('Sorry, this subscription option is not available at the moment.');
+         submitButton.disabled = false;
+         submitButton.textContent = 'Proceed to Payment';
+         return;
+    }
+
+    const priceId = PRICE_IDS[key][cadenceKey];
+
+    const boxMeta = {
+        boxType: state.orderType,
+        preset: state.orderType === 'preset' ? PRODUCTS[state.selectedPreset].name : null,
+        size: size,
+        cadence: cadenceKey,
+        customContents: state.orderType === 'custom' ? JSON.stringify(state.customBox) : null,
+    };
+
     try {
         const response = await fetch('/.netlify/functions/create-checkout-session', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ items: state.items }),
+            headers: { 'Content-Type': 'application/json', },
+            body: JSON.stringify({ priceId, quantity: 1, boxMeta }),
         });
 
         const session = await response.json();
@@ -770,10 +821,9 @@ async function handleFormSubmit(event) {
             return;
         }
 
-        // IMPORTANT: Replace with your actual Stripe publishable key.
         const stripe = Stripe('pk_test_51S3ncnQQDP18MPc4GR7ywjp4cUpLnGYxKJjbbtacE2BM8pTm4ce6uxnXVjFQrHkI572Cm3zoFQmvIPJbWW48kaGW00p3PJtsRW'); 
         const result = await stripe.redirectToCheckout({
-            sessionId: session.sessionId // Use sessionId from backend response
+            sessionId: session.sessionId
         });
 
         if (result.error) {
@@ -805,7 +855,6 @@ document.addEventListener('DOMContentLoaded', () => {
     selectCustomBtn.addEventListener('click', () => handleOrderTypeSelect('custom'));
     messageOkBtn.addEventListener('click', closeMessageBox);
     
-    // Check if the element exists before adding a listener
     const detailsFormElement = document.getElementById('details-form');
     if (detailsFormElement) {
         detailsFormElement.addEventListener('submit', handleFormSubmit);
