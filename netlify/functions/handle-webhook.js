@@ -50,7 +50,7 @@ exports.handler = async (event) => {
 
       // Send yourself an email
       const msg = {
-        to: "your-email@example.com", // 👈 where you want notifications
+        to: "fourthgatemicrogreens@gmail.com", // 👈 where you want notifications
         from: process.env.SENDGRID_FROM_EMAIL, // must be verified in SendGrid
         subject: `🌱 New Order - ${orderData.email}`,
         text: `
