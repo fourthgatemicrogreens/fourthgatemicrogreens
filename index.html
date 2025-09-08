@@ -784,6 +784,13 @@ async function handleFormSubmit(event) {
         key = `CUSTOM_${customSizeTier}OZ`;
         size = `${totalUnits * 4}oz`; // Send actual size in metadata
     }
+
+    if (!state.deliveryFrequency) {
+ 	showMessageBox('Please select a delivery frequency.');
+ 	submitButton.disabled = false;
+  	submitButton.textContent = 'Proceed to Payment';
+  	return;
+    }
     
     const cadenceKey = state.deliveryFrequency.toLowerCase();
     
@@ -897,3 +904,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
+
+
