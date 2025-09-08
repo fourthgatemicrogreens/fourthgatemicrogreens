@@ -48,10 +48,10 @@ exports.handler = async (event) => {
       await db.collection('orders').add(orderData);
       console.log("✅ Order saved:", orderData);
 
-      // Send yourself an email
+      // --- Business notification ---
       const msg = {
-        to: "fourthgatemicrogreens@gmail.com", // 👈 where you want notifications
-        from: process.env.SENDGRID_FROM_EMAIL, // must be verified in SendGrid
+        to: "fourthgatemicrogreens@gmail.com", // 👈 your inbox
+        from: process.env.SENDGRID_FROM_EMAIL, // must be verified sender
         subject: `🌱 New Order - ${orderData.email}`,
         text: `
 New order received!
@@ -70,7 +70,37 @@ Session ID: ${orderData.sessionId}
       };
 
       await sgMail.send(msg);
-      console.log("📧 Email sent for new order");
+      console.log("📧 Business email sent");
+
+      // --- Customer confirmation ---
+      if (orderData.email && orderData.email !== "N/A") {
+        const customerMsg = {
+          to: orderData.email, // 👈 customer email from Stripe
+          from: process.env.SENDGRID_FROM_EMAIL,
+          subject: "🌱 Your Fourth Gate Microgreens Order Confirmation",
+          text: `
+Hi there,
+
+Thanks for your order with Fourth Gate Microgreens!
+
+We’ve received your payment of $${orderData.amount} and your order is being prepared.
+
+Shipping to:
+${orderData.address.line1 || ""} ${orderData.address.line2 || ""}
+${orderData.address.city || ""}, ${orderData.address.state || ""} ${orderData.address.postal_code || ""}
+${orderData.address.country || ""}
+
+Order ID: ${orderData.sessionId}
+
+We’ll be in touch when your microgreens are on their way 🌱
+
+— The Fourth Gate Team
+          `,
+        };
+
+        await sgMail.send(customerMsg);
+        console.log("📧 Customer confirmation sent to:", orderData.email);
+      }
 
     } catch (err) {
       console.error("❌ Error:", err);
@@ -79,4 +109,3 @@ Session ID: ${orderData.sessionId}
 
   return { statusCode: 200, body: JSON.stringify({ received: true }) };
 };
-
