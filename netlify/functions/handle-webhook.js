@@ -48,53 +48,53 @@ exports.handler = async (event) => {
       await db.collection('orders').add(orderData);
       console.log("✅ Order saved:", orderData);
 
-      // --- Business notification ---
+      // --- HTML Email Templates ---
+      const addressHTML = `
+        ${orderData.address.line1 || ""} ${orderData.address.line2 || ""}<br>
+        ${orderData.address.city || ""}, ${orderData.address.state || ""} ${orderData.address.postal_code || ""}<br>
+        ${orderData.address.country || ""}
+      `;
+
+      // Business email (to you)
       const msg = {
-        to: "fourthgatemicrogreens@gmail.com", // 👈 your inbox
-        from: process.env.SENDGRID_FROM_EMAIL, // must be verified sender
+        to: "fourthgatemicrogreens@gmail.com", // your inbox
+        from: process.env.SENDGRID_FROM_EMAIL,
         subject: `🌱 New Order - ${orderData.email}`,
-        text: `
-New order received!
-
-Customer: ${orderData.email}
-Amount: $${orderData.amount}
-Status: ${orderData.status}
-
-Shipping Address:
-${orderData.address.line1 || ""} ${orderData.address.line2 || ""}
-${orderData.address.city || ""}, ${orderData.address.state || ""} ${orderData.address.postal_code || ""}
-${orderData.address.country || ""}
-
-Session ID: ${orderData.sessionId}
+        html: `
+          <h2>🌱 New Order Received</h2>
+          <p><strong>Customer:</strong> ${orderData.email}</p>
+          <p><strong>Amount:</strong> $${orderData.amount}</p>
+          <p><strong>Status:</strong> ${orderData.status}</p>
+          <p><strong>Shipping Address:</strong><br>${addressHTML}</p>
+          <p><strong>Session ID:</strong> ${orderData.sessionId}</p>
+          <hr>
+          <small>Fourth Gate Microgreens - Order Notification</small>
         `,
       };
 
       await sgMail.send(msg);
       console.log("📧 Business email sent");
 
-      // --- Customer confirmation ---
+      // Customer confirmation email
       if (orderData.email && orderData.email !== "N/A") {
         const customerMsg = {
-          to: orderData.email, // 👈 customer email from Stripe
+          to: orderData.email,
           from: process.env.SENDGRID_FROM_EMAIL,
           subject: "🌱 Your Fourth Gate Microgreens Order Confirmation",
-          text: `
-Hi there,
-
-Thanks for your order with Fourth Gate Microgreens!
-
-We’ve received your payment of $${orderData.amount} and your order is being prepared.
-
-Shipping to:
-${orderData.address.line1 || ""} ${orderData.address.line2 || ""}
-${orderData.address.city || ""}, ${orderData.address.state || ""} ${orderData.address.postal_code || ""}
-${orderData.address.country || ""}
-
-Order ID: ${orderData.sessionId}
-
-We’ll be in touch when your microgreens are on their way 🌱
-
-— The Fourth Gate Team
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #eee; border-radius:10px;">
+              <h1 style="color:#2D4026;">Thank you for your order! 🌱</h1>
+              <p>Hi there,</p>
+              <p>We’ve received your payment of <strong>$${orderData.amount}</strong> and your order is being prepared.</p>
+              <h3>Shipping Address</h3>
+              <p>${addressHTML}</p>
+              <h3>Order Details</h3>
+              <p><strong>Order ID:</strong> ${orderData.sessionId}</p>
+              <p><strong>Status:</strong> ${orderData.status}</p>
+              <hr>
+              <p style="color:#666;">We’ll notify you when your microgreens are on their way.<br>
+              — The Fourth Gate Team 🌱</p>
+            </div>
           `,
         };
 
