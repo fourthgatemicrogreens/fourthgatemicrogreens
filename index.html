@@ -221,6 +221,12 @@ body {
     background: #2D5829;
     transform: rotate(90deg);
 }
+
+/* Style for glowing background section */
+.glowing-green-bg {
+    background: radial-gradient(ellipse at 50% 0%, #d8e7d7, #b1d0b0 80%);
+}
+
 /* Style for YouTube video background */
 .video-background {
     position: absolute;
@@ -290,7 +296,7 @@ body {
 
 <main class="relative z-10 bg-[#F8F7F3]">
     <!-- How It Works Section -->
-    <section id="how-it-works" class="py-24 bg-[#E8F0E4]">
+    <section id="how-it-works" class="py-24 glowing-green-bg">
         <div class="max-w-6xl mx-auto px-6 text-center">
             <h2 class="text-4xl md:text-5xl section-title reveal">So Fresh, So Simple.</h2>
             <p class="mt-4 text-lg text-gray-800 reveal">Getting started with fresh microgreens is easy.</p>
@@ -925,4 +931,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-
