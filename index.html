@@ -221,6 +221,19 @@ body {
     background: #2D5829;
     transform: rotate(90deg);
 }
+/* Style for YouTube video background */
+.video-background {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    /* These values ensure the video covers the screen without black bars */
+    width: 100vw;
+    height: 56.25vw; /* 100 * 9 / 16 = 56.25 */
+    min-height: 100vh;
+    min-width: 177.77vh; /* 100 * 16 / 9 = 177.77 */
+}
 </style>
 </head>
 <body class="text-stone-900">
@@ -250,7 +263,15 @@ body {
 
 
 <!-- Hero Section -->
-<section class="relative h-screen flex items-center justify-center text-center text-white bg-cover bg-center" style="background-image: url('https://iili.io/Ko8SWQI.md.jpg');">
+<section class="relative h-screen flex items-center justify-center text-center text-white overflow-hidden">
+    <!-- Background Video -->
+    <iframe
+        class="video-background"
+        src="https://www.youtube.com/embed/R7E-OD9J6Z0?autoplay=1&mute=1&loop=1&playlist=R7E-OD9J6Z0&controls=0&showinfo=0&rel=0&start=15"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+    </iframe>
     <div class="absolute inset-0 bg-black/50 z-10"></div>
     <div class="relative z-20 max-w-4xl px-6">
         <h1 class="text-6xl md:text-8xl hero-headline">
@@ -316,8 +337,8 @@ body {
                     </p>
                 </div>
                 <div class="grid grid-cols-2 gap-4 reveal" style="transition-delay: 150ms;">
-                    <img src="https://images.pexels.com/photos/5958017/pexels-photo-5958017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Microgreens being harvested" class="rounded-3xl shadow-xl w-full h-full object-cover aspect-[4/5]">
-                    <img src="https://images.pexels.com/photos/7248386/pexels-photo-7248386.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Trays of microgreens growing" class="rounded-3xl shadow-xl w-full h-full object-cover aspect-[4/5] mt-8">
+                    <img src="https://images.pexels.com/photos/5958017/pexels-photo-5958017.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="A farmer's hands carefully harvesting fresh broccoli microgreens with shears." class="rounded-3xl shadow-xl w-full h-full object-cover aspect-[4/5]">
+                    <img src="https://images.pexels.com/photos/7248386/pexels-photo-7248386.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Multiple trays of vibrant microgreens growing under lights in an indoor farm." class="rounded-3xl shadow-xl w-full h-full object-cover aspect-[4/5] mt-8">
                 </div>
             </div>
         </div>
@@ -786,10 +807,10 @@ async function handleFormSubmit(event) {
     }
 
     if (!state.deliveryFrequency) {
- 	showMessageBox('Please select a delivery frequency.');
- 	submitButton.disabled = false;
-  	submitButton.textContent = 'Proceed to Payment';
-  	return;
+	showMessageBox('Please select a delivery frequency.');
+	submitButton.disabled = false;
+ 	submitButton.textContent = 'Proceed to Payment';
+ 	return;
     }
     
     const cadenceKey = state.deliveryFrequency.toLowerCase();
