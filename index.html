@@ -376,6 +376,12 @@ body {
         <!-- Step 1: Choose Custom or Preset -->
         <div id="step-1" class="step-content">
             <h3 class="text-3xl font-bold text-center mb-8" style="font-family: 'Playfair Display', serif;">Choose Your Box</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="selectable-card text-center" id="select-preset">
+                    <img src="https://iili.io/KoaQHt2.md.png" alt="Preset Blends" class="w-full h-32 object-cover rounded-xl mb-4">
+                    <h4 class="font-bold text-xl mb-1">Choose a Mix</h4>
+                    <p class="text-sm text-gray-500">Curated for flavor and health.</p>
+                </div>
                 <div class="selectable-card text-center" id="select-custom">
                     <img src="https://iili.io/KoaPUv4.md.png" alt="Build Your Own" class="w-full h-32 object-cover rounded-xl mb-4">
                     <h4 class="font-bold text-xl mb-1">Build Your Own</h4>
@@ -443,10 +449,34 @@ const state = {
 };
 
 // For UI display and price calculation
+const PRODUCTS = {
+    'super_green': { name: 'Super Green Mix', contents: 'Sunflower, Pea, Broccoli & Kale', img: 'https://iili.io/KocaUUQ.md.png', sizes: { 8: 15.00, 16: 25.00 } },
+    'spicy_green': { name: 'Spicy Green Mix', contents: 'Purple Radish, Purple Kohlrabi & Arugula', img: 'https://iili.io/KocaUUQ.md.png', sizes: { 8: 15.00, 16: 25.00 } }
+};
+const CUSTOM_PRICES = {
+    1: 8, 2: 15, 3: 23, 4: 25,
+};
+const CROP_NAMES = ['Sunflower', 'Pea', 'Broccoli', 'Purple Radish', 'Kale', 'Purple Kohlrabi'];
+
 // For Stripe Checkout Subscription
 // IMPORTANT: These are placeholder IDs. Replace with your actual Stripe Price IDs for each subscription plan.
 const PRICE_IDS = {
-    CUSTOM_120Z: {
+    SUPER_GREEN_8OZ: {
+        weekly: 'price_1S4wv1QQDP18MPc4nFdsPROY',
+        biweekly: 'price_1S4wxTQQDP18MPc44HMhwUJ5',
+        monthly: 'price_1S4wxTQQDP18MPc4fkRfNxDp',
+    },
+    SUPER_GREEN_16OZ: {
+        weekly: 'price_1S4x6bQQDP18MPc47IvvrDqS',
+        biweekly: 'price_1S4x7eQQDP18MPc4yyupWYah',
+        monthly: 'price_1S4x7eQQDP18MPc49UqLB7m5',
+    },
+    SPICY_GREEN_8OZ: {
+        weekly: 'price_1S4wxyQQDP18MPc4IqtJHATF',
+        biweekly: 'price_1S4wytQQDP18MPc4u4xPvPx9',
+        monthly: 'price_1S4wytQQDP18MPc41D5i5ZCQ',
+    },
+    SPICY_GREEN_16OZ: {
         weekly: 'price_1S4x1aQQDP18MPc4VUG1rcFM',
         biweekly: 'price_1S4x3JQQDP18MPc47HahYImC',
         monthly: 'price_1S4x3JQQDP18MPc4mcIGLbTz',
