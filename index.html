@@ -450,14 +450,16 @@ const state = {
 };
 
 // For UI display and price calculation
-const PRODUCTS = {
-    'super_green': { name: 'Super Green Mix', contents: 'Sunflower, Pea, Broccoli & Kale', img: 'https://iili.io/KocaUUQ.md.png', sizes: { 8: 15.00, 16: 25.00 } },
-    'spicy_green': { name: 'Spicy Green Mix', contents: 'Purple Radish, Purple Kohlrabi & Arugula', img: 'https://iili.io/KocaUUQ.md.png', sizes: { 8: 15.00, 16: 25.00 } }
-};
-const CUSTOM_PRICES = {
-    1: 8, 2: 15, 3: 23, 4: 25,
-};
-const CROP_NAMES = ['Sunflower', 'Pea', 'Broccoli', 'Purple Radish', 'Kale', 'Purple Kohlrabi'];
+// --- Build-your-own configuration (weekly only) ---
+const MIXES = [
+  { name: 'Custom Green Mix' },
+];
+const SINGLES = ['Sunflower', 'Pea', 'Broccoli', 'Purple Radish', 'Kale', 'Purple Kohlrabi'];
+const CROP_OPTIONS = [...MIXES.map(m => m.name), ...SINGLES];
+
+// Price by total 4oz slots (2–4 items)
+const PRICE_TIER = { 2: 15, 3: 21, 4: 26 };
+
 
 // For Stripe Checkout Subscription
 // IMPORTANT: These are placeholder IDs. Replace with your actual Stripe Price IDs for each subscription plan.
