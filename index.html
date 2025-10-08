@@ -288,7 +288,7 @@ body {
         </p>
         <div class="mt-12 flex justify-center">
             <button id="hero-order-btn" class="btn-primary floating">
-                Choose Your Box
+                Build Your Box
             </button>
         </div>
     </div>
@@ -299,18 +299,34 @@ body {
     <section id="how-it-works" class="py-24 glowing-green-bg">
         <div class="max-w-6xl mx-auto px-6 text-center">
             <h2 class="text-4xl md:text-5xl section-title reveal">So Fresh, So Simple.</h2>
-            <p class="mt-4 text-lg text-gray-800 reveal">We’re grow-to-order. New subscriptions and changes begin 2 weeks from today.</p>
+            <p class="mt-4 text-lg text-gray-800 reveal">Getting started with fresh microgreens is easy.</p>
             <div class="mt-20 grid grid-cols-1 md:grid-cols-3 gap-10">
                 <!-- Step 1 -->
-                <div id="step-1" class="step-content">
-  <h3 class="text-3xl font-bold text-center mb-3" style="font-family: 'Playfair Display', serif;">Build Your Weekly Box</h3>
-  <p class="text-center text-gray-600 mb-6 text-sm">
-    Choose <strong>2–4 items</strong>. Each item is <strong>4oz</strong>. Pricing: <strong>$15</strong> for 2 items (8oz), <strong>$21</strong> for 3 (12oz), <strong>$26</strong> for 4 (16oz).
-    <br/>New subscriptions and changes take effect <strong>in 2 weeks</strong> (grow-to-order).
-  </p>
-  <div id="step-1-content" class="mt-4"></div>
-</div>
-				
+                <div class="p-10 rounded-3xl transition transform hover:-translate-y-2 bg-white shadow-xl reveal">
+                    <div class="w-20 h-20 mx-auto flex items-center justify-center bg-green-100 rounded-full mb-6">
+                        <svg class="w-10 h-10 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold">1. Select Your Plan</h3>
+                    <p class="mt-3 text-stone-700">Choose from curated boxes or build your own. Delivered weekly, bi-weekly, or monthly.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="p-10 rounded-3xl transition transform hover:-translate-y-2 bg-white shadow-xl reveal" style="transition-delay: 150ms;">
+                    <div class="w-20 h-20 mx-auto flex items-center justify-center bg-green-100 rounded-full mb-6">
+                         <svg class="w-10 h-10 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold">2. We Harvest & Deliver</h3>
+                    <p class="mt-3 text-stone-700">We harvest your microgreens at peak freshness and deliver them straight to your doorstep.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="p-10 rounded-3xl transition transform hover:-translate-y-2 bg-white shadow-xl reveal" style="transition-delay: 300ms;">
+                    <div class="w-20 h-20 mx-auto flex items-center justify-center bg-green-100 rounded-full mb-6">
+                         <svg class="w-10 h-10 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold">3. Enjoy Peak Nutrition</h3>
+                    <p class="mt-3 text-stone-700">Elevate your meals with unparalleled flavor, vibrant color, and a powerful nutrient boost.</p>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- About Us Section -->
@@ -358,20 +374,8 @@ body {
         <span class="modal-close">&times;</span>
 
         <!-- Step 1: Choose Custom or Preset -->
-        <div id="step-1" class="step-content">
-            <h3 class="text-3xl font-bold text-center mb-8" style="font-family: 'Playfair Display', serif;">Choose Your Box</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="selectable-card text-center" id="select-preset">
-                    <img src="https://iili.io/KoaQHt2.md.png" alt="Preset Blends" class="w-full h-32 object-cover rounded-xl mb-4">
-                    <h4 class="font-bold text-xl mb-1">Choose a Mix</h4>
-                    <p class="text-sm text-gray-500">Curated for flavor and health.</p>
-                </div>
-                <div class="selectable-card text-center" id="select-custom">
-                    <img src="https://iili.io/KoaPUv4.md.png" alt="Build Your Own" class="w-full h-32 object-cover rounded-xl mb-4">
-                    <h4 class="font-bold text-xl mb-1">Build Your Own</h4>
-                    <p class="text-sm text-gray-500">Perfectly tailored to you.</p>
-                </div>
-            </div>
+        <div id="step-1" class="step-content hidden">
+            <!-- This step is now skipped. -->
         </div>
 
         <!-- Step 2: Choose Preset or Build Custom -->
@@ -387,17 +391,25 @@ body {
                 <div id="order-summary" class="text-gray-700 space-y-2"></div>
                 <hr class="my-4">
                 <div class="text-xl font-bold flex justify-between">
-                    <span>Total:</span>
+                    <span>Weekly Total:</span>
                     <span id="summary-total-price">$0.00</span>
                 </div>
             </div>
 
+            <div class="mb-6 bg-green-50 p-4 rounded-2xl border border-green-200">
+                 <h4 class="font-semibold text-lg mb-2 text-center">Grown to Order Timeline</h4>
+                 <p class="text-center text-sm text-gray-600 mb-4">
+                    We grow to order! Your first delivery will be ready in approximately two weeks.
+                 </p>
+                 <p id="first-delivery-estimate" class="text-center font-bold text-green-800 bg-green-100 rounded-lg py-2"></p>
+            </div>
+
             <div class="mb-6">
-                <h4 class="font-semibold text-lg mb-4 text-center">Delivery Frequency</h4>
-                <div class="grid grid-cols-3 gap-3" id="frequency-options">
-                    <div class="selectable-card text-center !p-3" data-frequency="Weekly" data-price-modifier="1"><h5 class="font-bold">Weekly</h5><p class="text-xs text-gray-500">Best Value</p></div>
-                    <div class="selectable-card text-center !p-3" data-frequency="biweekly" data-price-modifier="1.05"><h5 class="font-bold">Bi-weekly</h5><p class="text-xs text-gray-500">+5%</p></div>
-                    <div class="selectable-card text-center !p-3" data-frequency="Monthly" data-price-modifier="1.1"><h5 class="font-bold">Monthly</h5><p class="text-xs text-gray-500">+10%</p></div>
+                <h4 class="font-semibold text-lg mb-4 text-center">Preferred Delivery Day</h4>
+                <div class="grid grid-cols-3 gap-3" id="delivery-day-options">
+                    <div class="selectable-card text-center !p-3" data-day="Tuesday"><h5 class="font-bold">Tuesday</h5></div>
+                    <div class="selectable-card text-center !p-3" data-day="Wednesday"><h5 class="font-bold">Wednesday</h5></div>
+                    <div class="selectable-card text-center !p-3" data-day="Thursday"><h5 class="font-bold">Thursday</h5></div>
                 </div>
             </div>
 
@@ -424,59 +436,29 @@ body {
 // --- App State & Constants ---
 const state = {
     currentStep: 1,
-    orderType: null, // 'preset' or 'custom'
-    selectedPreset: null, // e.g., 'super_green'
-    selectedPresetSize: null, // 8 or 16
+    orderType: 'custom', // We now only support 'custom'
     customBox: {}, // { cropName: quantity of 4oz units }
-    deliveryFrequency: null, // 'Weekly', 'Bi-weekly', 'Monthly'
+    deliveryDay: null,
+    allowRotation: false,
     totalPrice: 0,
 };
 
 // For UI display and price calculation
-// --- Build-your-own configuration (weekly only) ---
-const MIXES = [
-  { name: 'Custom Green Mix' },
-];
-const SINGLES = ['Sunflower', 'Pea', 'Broccoli', 'Purple Radish', 'Kale', 'Purple Kohlrabi'];
-const CROP_OPTIONS = [...MIXES.map(m => m.name), ...SINGLES];
+const CUSTOM_PRICES = {
+    2: 15, // 8oz
+    3: 21, // 12oz
+    4: 26, // 16oz
+};
+// Updated list including mixes and single varieties
+const CROP_NAMES = ['Super Green Mix', 'Spicy Green Mix', 'Sunflower', 'Pea', 'Broccoli', 'Purple Radish', 'Kale', 'Purple Kohlrabi'];
 
-// Price by total 4oz slots (2–4 items)
-const PRICE_TIER = { 2: 15, 3: 21, 4: 26 };
-
-
-// For Stripe Checkout Subscription
-// IMPORTANT: These are placeholder IDs. Replace with your actual Stripe Price IDs for each subscription plan.
+// For Stripe Checkout Subscription - ONLY WEEKLY PLANS
+// IMPORTANT: These are placeholder IDs. Replace with your actual Stripe Price IDs.
 const PRICE_IDS = {
-    SUPER_GREEN_8OZ: {
-        weekly: 'price_1S4wv1QQDP18MPc4nFdsPROY',
-        biweekly: 'price_1S4wxTQQDP18MPc44HMhwUJ5',
-        monthly: 'price_1S4wxTQQDP18MPc4fkRfNxDp',
-    },
-    SUPER_GREEN_16OZ: {
-        weekly: 'price_1S4x6bQQDP18MPc47IvvrDqS',
-        biweekly: 'price_1S4x7eQQDP18MPc4yyupWYah',
-        monthly: 'price_1S4x7eQQDP18MPc49UqLB7m5',
-    },
-    SPICY_GREEN_8OZ: {
-        weekly: 'price_1S4wxyQQDP18MPc4IqtJHATF',
-        biweekly: 'price_1S4wytQQDP18MPc4u4xPvPx9',
-        monthly: 'price_1S4wytQQDP18MPc41D5i5ZCQ',
-    },
-    SPICY_GREEN_16OZ: {
-        weekly: 'price_1S4x1aQQDP18MPc4VUG1rcFM',
-        biweekly: 'price_1S4x3JQQDP18MPc47HahYImC',
-        monthly: 'price_1S4x3JQQDP18MPc4mcIGLbTz',
-    },
-    CUSTOM_8OZ: { // For custom boxes of 1-2 units (4-8oz)
-        weekly: 'price_1S4x9HQQDP18MPc4hxPX7vdc',
-        biweekly: 'price_1S4xBHQQDP18MPc4l8iZlswN',
-        monthly: 'price_1S4xBHQQDP18MPc4XL9Nzkya',
-    },
-    CUSTOM_16OZ: { // For custom boxes of 3+ units (12oz+)
-        weekly: 'price_1S4x9nQQDP18MPc4MtZmQUVY',
-        biweekly: 'price_1S4xBqQQDP18MPc4pdkz7C1J',
-        monthly: 'price_1S4xBqQQDP18MPc44YVz4D7L',
-    },
+    // Weekly prices based on number of 4oz units
+    CUSTOM_2_UNITS_WEEKLY: 'price_REPLACE_WITH_15_DOLLAR_WEEKLY_ID', // For 8oz box
+    CUSTOM_3_UNITS_WEEKLY: 'price_REPLACE_WITH_21_DOLLAR_WEEKLY_ID', // For 12oz box
+    CUSTOM_4_UNITS_WEEKLY: 'price_REPLACE_WITH_26_DOLLAR_WEEKLY_ID', // For 16oz box
 };
 
 // --- DOM Elements ---
@@ -492,8 +474,6 @@ const orderButtons = [
 const messageBox = document.getElementById('message-box');
 const messageOkBtn = document.getElementById('message-ok-btn');
 const detailsForm = document.getElementById('details-form');
-const selectPresetBtn = document.getElementById('select-preset');
-const selectCustomBtn = document.getElementById('select-custom');
 const modalCloseBtn = document.querySelector('.modal-close');
 
 
@@ -502,7 +482,7 @@ function openModal() {
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     resetStateAndUI();
-    renderStep(1);
+    renderStep(2); // Go directly to step 2 (custom builder)
 }
 
 function closeModal() {
@@ -512,14 +492,13 @@ function closeModal() {
 
 function resetStateAndUI() {
     state.currentStep = 1;
-    state.orderType = null;
-    state.selectedPreset = null;
-    state.selectedPresetSize = null;
+    state.orderType = 'custom';
     state.customBox = {};
-    state.deliveryFrequency = null;
+    state.deliveryDay = null;
+    state.allowRotation = false;
     state.totalPrice = 0;
     // Reset selection visuals
-    document.querySelectorAll('#frequency-options .selected').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('#delivery-day-options .selected').forEach(el => el.classList.remove('selected'));
     document.getElementById('details-form').reset();
 }
 
@@ -531,57 +510,31 @@ function renderStep(step) {
     const targetStepEl = document.getElementById('step-' + step);
     if (step === 2) {
         const step2Content = document.getElementById('step-2');
-        if (state.orderType === 'preset' && state.selectedPreset && !state.selectedPresetSize) {
-             step2Content.innerHTML = generatePresetSizeSelectionHTML();
-        } else {
-            state.selectedPreset = null;
-            state.selectedPresetSize = null;
-            step2Content.innerHTML = state.orderType === 'preset' ? generatePresetSelectionHTML() : generateCustomBuilderHTML();
-        }
-
-        if(state.orderType === 'custom') {
-            updateCustomBuilderUI();
-        }
+        step2Content.innerHTML = generateCustomBuilderHTML();
+        updateCustomBuilderUI();
         addStep2EventListeners();
+    }
+    if (step === 3) {
+        // Calculate and display the first delivery estimate
+        const firstDeliveryEl = document.getElementById('first-delivery-estimate');
+        const twoWeeksFromNow = new Date();
+        twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+        firstDeliveryEl.textContent = `Est. First Delivery: ${twoWeeksFromNow.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
     }
     targetStepEl.classList.remove('hidden');
 }
 
 function prevStep() {
     if (state.currentStep === 3) {
-        state.selectedPresetSize = null; 
         renderStep(2);
     } else if (state.currentStep === 2) {
-        state.selectedPreset = null;
-        renderStep(1);
+        closeModal(); // "Back" from the builder now closes the modal
     }
-}
-
-function backToPresetList() {
-    state.selectedPreset = null;
-    state.selectedPresetSize = null;
-    renderStep(2);
-}
-
-function handleOrderTypeSelect(type) {
-    state.orderType = type;
-    renderStep(2);
-}
-
-function handlePresetSelect(presetId) {
-    state.selectedPreset = presetId;
-    renderStep(2); 
-}
-
-function handlePresetSizeSelect(size) {
-    state.selectedPresetSize = size;
-    renderStep(3);
-    updateSummaryAndPrice();
 }
 
 function handleCustomCropChange(cropName, action) {
     if (action === 'add') {
-        if (!state.customBox[cropName] && Object.keys(state.customBox).length >= 4) {
+        if (Object.keys(state.customBox).length >= 4) {
             showMessageBox('You can select a maximum of 4 different types of greens for a custom box.');
             return;
         }
@@ -597,8 +550,9 @@ function handleCustomCropChange(cropName, action) {
 }
 
 function proceedFromCustom() {
-    if (Object.keys(state.customBox).length === 0) {
-        showMessageBox('Please add at least one item to your box.');
+    const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
+    if (totalUnits < 2) {
+        showMessageBox('Please select at least two items (for an 8oz box) to proceed.');
         return;
     }
     renderStep(3);
@@ -629,52 +583,16 @@ function updateCustomBuilderUI() {
     }
 }
 
-function generatePresetSelectionHTML() {
-    return `
-        <h3 class="text-3xl font-bold text-center mb-8" style="font-family: 'Playfair Display', serif;">Choose a Mix</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        ${Object.keys(PRODUCTS).map(key => {
-            const p = PRODUCTS[key];
-            return `
-            <div class="selectable-card text-center" data-preset-id="${key}">
-                <img src="${p.img}" alt="${p.name}" class="w-full h-32 object-cover rounded-xl mb-4">
-                <h4 class="font-bold text-xl mb-1">${p.name}</h4>
-                <p class="text-sm text-gray-500">${p.contents}</p>
-            </div>
-            `
-        }).join('')}
-        </div>
-        <button class="mt-8 text-gray-500 hover:text-gray-700 transition w-full text-center" onclick="prevStep()">← Back</button>
-    `;
-}
-
-function generatePresetSizeSelectionHTML() {
-    if (!state.selectedPreset) return '';
-    const product = PRODUCTS[state.selectedPreset];
-    return `
-        <h3 class="text-3xl font-bold text-center mb-2" style="font-family: 'Playfair Display', serif;">Choose a Size</h3>
-        <p class="text-center text-gray-500 mb-6">${product.name}</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="selectable-card text-center" data-size="8">
-                <h4 class="font-bold text-xl">8oz Box</h4>
-                <p class="text-sm text-gray-500">Good for 1-2 people</p>
-                <p class="mt-2 text-lg font-semibold">$${product.sizes[8].toFixed(2)}</p>
-            </div>
-            <div class="selectable-card text-center" data-size="16">
-                <h4 class="font-bold text-xl">16oz Box</h4>
-                <p class="text-sm text-gray-500">Perfect for families</p>
-                <p class="mt-2 text-lg font-semibold">$${product.sizes[16].toFixed(2)}</p>
-            </div>
-        </div>
-        <button class="mt-8 text-gray-500 hover:text-gray-700 transition w-full text-center" onclick="backToPresetList()">← Back to Mix Selection</button>
-    `;
-}
-
-
 function generateCustomBuilderHTML() {
     return `
-        <h3 class="text-3xl font-bold text-center mb-2" style="font-family: 'Playfair Display', serif;">Build Your Box</h3>
-        <p class="text-center text-gray-500 mb-6 text-sm">Each item is a 4oz unit. <br>An 8oz box (2 units) is <strong>$15</strong>, and a 16oz box (4 units) is <strong>$25</strong>.</p>
+        <h3 class="text-3xl font-bold text-center mb-2" style="font-family: 'Playfair Display', serif;">Build Your Weekly Box</h3>
+        <p class="text-center text-gray-600 mb-2 text-sm">
+            This is a <strong class="font-semibold text-green-700">weekly subscription</strong> that is grown to order.
+            <br>Please allow two weeks for your first delivery.
+        </p>
+        <p class="text-center text-gray-500 mb-6 text-sm">
+            8oz (2 items): <strong>$15</strong> | 12oz (3 items): <strong>$21</strong> | 16oz (4 items): <strong>$26</strong>
+        </p>
 
         <div class="grid grid-cols-2 gap-4 mb-6">
             <div>
@@ -693,6 +611,12 @@ function generateCustomBuilderHTML() {
                 <div id="custom-box-items" class="bg-gray-100 p-3 rounded-lg min-h-[150px]">
                     <p class="text-sm text-gray-400 text-center mt-12">Your items will appear here.</p>
                 </div>
+                 <div class="mt-4 text-center">
+                    <label class="flex items-center justify-center text-sm text-gray-600">
+                        <input type="checkbox" id="rotation-checkbox" class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 mr-2">
+                        Allow us to rotate your selections for variety?
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -708,40 +632,23 @@ function updateSummaryAndPrice() {
     let basePrice = 0;
     let summaryHTML = '';
 
-    if (state.orderType === 'preset' && state.selectedPreset && state.selectedPresetSize) {
-        const product = PRODUCTS[state.selectedPreset];
-        basePrice = product.sizes[state.selectedPresetSize];
-        summaryHTML = `<p><strong>${product.name} (${state.selectedPresetSize}oz)</strong></p>`;
-    } else if (state.orderType === 'custom') {
-        const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
+    const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
 
-        if (totalUnits > 0) {
-            if (CUSTOM_PRICES[totalUnits]) {
-                basePrice = CUSTOM_PRICES[totalUnits];
-            } else { // Price for > 4 units
-                basePrice = CUSTOM_PRICES[4] + (totalUnits - 4) * 7;
-            }
-        }
-        
-        let totalOz = totalUnits * 4;
-        summaryHTML = `<p><strong>Custom Box (${totalOz}oz)</strong></p>`;
-        if(totalUnits > 0) {
-            for (const [crop, qty] of Object.entries(state.customBox)) {
-                summaryHTML += `<p class="pl-2 text-sm text-gray-600">${qty} x ${crop} (4oz)</p>`;
-            }
+    if (totalUnits >= 2) {
+        basePrice = CUSTOM_PRICES[totalUnits] || 0;
+    }
+    
+    let totalOz = totalUnits * 4;
+    summaryHTML = `<p><strong>Custom Weekly Box (${totalOz}oz)</strong></p>`;
+    if(totalUnits > 0) {
+        for (const [crop, qty] of Object.entries(state.customBox)) {
+            summaryHTML += `<p class="pl-2 text-sm text-gray-600">${qty} x ${crop} (4oz)</p>`;
         }
     }
 
     let finalPrice = basePrice;
-    const freqCard = document.querySelector('#frequency-options .selected');
-    if (freqCard) {
-        const modifier = parseFloat(freqCard.dataset.priceModifier);
-        finalPrice *= modifier;
-        state.deliveryFrequency = freqCard.dataset.frequency;
-    } else {
-        state.deliveryFrequency = null;
-    }
-
+    
+    // No frequency modifier is needed anymore as it's always weekly.
     state.totalPrice = finalPrice;
     summaryEl.innerHTML = summaryHTML;
     totalEl.textContent = `$${finalPrice.toFixed(2)}`;
@@ -750,27 +657,23 @@ function updateSummaryAndPrice() {
 
 // --- Event Listeners ---
 function addStep2EventListeners() {
-    const presetCards = document.querySelectorAll('#step-2 [data-preset-id]');
-    presetCards.forEach(card => {
-        card.addEventListener('click', () => handlePresetSelect(card.dataset.presetId));
-    });
-
-    const sizeCards = document.querySelectorAll('#step-2 [data-size]');
-     sizeCards.forEach(card => {
-        card.addEventListener('click', () => handlePresetSizeSelect(parseInt(card.dataset.size)));
-    });
-
     const addBtns = document.querySelectorAll('#step-2 .add-btn');
     addBtns.forEach(btn => {
         btn.addEventListener('click', () => handleCustomCropChange(btn.dataset.crop, 'add'));
     });
+    const rotationCheckbox = document.getElementById('rotation-checkbox');
+    if(rotationCheckbox) {
+        rotationCheckbox.addEventListener('change', (e) => {
+            state.allowRotation = e.target.checked;
+        });
+    }
 }
 
 async function handleFormSubmit(event) {
     event.preventDefault();
 
-    if (!state.deliveryFrequency) {
-        showMessageBox('Please select a delivery frequency.');
+    if (!state.deliveryDay) {
+        showMessageBox('Please select a preferred delivery day.');
         return;
     }
     if (state.totalPrice <= 0) {
@@ -783,46 +686,28 @@ async function handleFormSubmit(event) {
     submitButton.textContent = 'Processing...';
 
     // --- Build payload for backend ---
-    let key;
-    let size;
+    const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
+    const key = `CUSTOM_${totalUnits}_UNITS_WEEKLY`;
+    const size = `${totalUnits * 4}oz`;
 
-    if (state.orderType === 'preset') {
-        key = `${state.selectedPreset.toUpperCase()}_${state.selectedPresetSize}OZ`;
-        size = `${state.selectedPresetSize}oz`;
-    } else { // custom
-        const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
-        // Bucket custom sizes into 8oz or 16oz price tiers for simplicity.
-        // Backend receives actual contents in metadata.
-        const customSizeTier = (totalUnits <= 2) ? 8 : 16; 
-        key = `CUSTOM_${customSizeTier}OZ`;
-        size = `${totalUnits * 4}oz`; // Send actual size in metadata
-    }
-
-    if (!state.deliveryFrequency) {
-	showMessageBox('Please select a delivery frequency.');
-	submitButton.disabled = false;
- 	submitButton.textContent = 'Proceed to Payment';
- 	return;
-    }
-    
-    const cadenceKey = state.deliveryFrequency.toLowerCase();
-    
-    if (!PRICE_IDS[key] || !PRICE_IDS[key][cadenceKey]) {
-         console.error(`Price ID not found for key: ${key} and cadence: ${cadenceKey}`);
+    if (!PRICE_IDS[key]) {
+         console.error(`Price ID not found for key: ${key}`);
          showMessageBox('Sorry, this subscription option is not available at the moment.');
          submitButton.disabled = false;
          submitButton.textContent = 'Proceed to Payment';
          return;
     }
 
-    const priceId = PRICE_IDS[key][cadenceKey];
+    const priceId = PRICE_IDS[key];
 
     const boxMeta = {
-        boxType: state.orderType,
-        preset: state.orderType === 'preset' ? PRODUCTS[state.selectedPreset].name : null,
+        boxType: 'custom',
+        preset: null,
         size: size,
-        cadence: cadenceKey,
-        customContents: state.orderType === 'custom' ? JSON.stringify(state.customBox) : null,
+        cadence: 'weekly',
+        deliveryDay: state.deliveryDay,
+        allowRotation: state.allowRotation,
+        customContents: JSON.stringify(state.customBox),
     };
 
     try {
@@ -871,8 +756,6 @@ function closeMessageBox() {
 document.addEventListener('DOMContentLoaded', () => {
     orderButtons.forEach(btn => btn.addEventListener('click', openModal));
     modalCloseBtn.addEventListener('click', closeModal);
-    selectPresetBtn.addEventListener('click', () => handleOrderTypeSelect('preset'));
-    selectCustomBtn.addEventListener('click', () => handleOrderTypeSelect('custom'));
     messageOkBtn.addEventListener('click', closeMessageBox);
     
     const detailsFormElement = document.getElementById('details-form');
@@ -880,12 +763,12 @@ document.addEventListener('DOMContentLoaded', () => {
         detailsFormElement.addEventListener('submit', handleFormSubmit);
     }
 
-    document.getElementById('frequency-options').addEventListener('click', e => {
+    document.getElementById('delivery-day-options').addEventListener('click', e => {
         const card = e.target.closest('.selectable-card');
         if (card) {
-            document.querySelectorAll('#frequency-options .selectable-card').forEach(c => c.classList.remove('selected'));
+            document.querySelectorAll('#delivery-day-options .selectable-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
-            updateSummaryAndPrice();
+            state.deliveryDay = card.dataset.day;
         }
     });
 
@@ -917,3 +800,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
+
+
