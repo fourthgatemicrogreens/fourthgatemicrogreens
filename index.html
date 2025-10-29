@@ -335,6 +335,7 @@ body {
     <section id="subscription" class="py-20 bg-[#3B7235] text-white text-center">
         <div class="max-w-4xl mx-auto px-6 reveal">
             <h2 class="text-4xl font-bold" style="font-family: 'Playfair Display', serif;">Ready to Start Your Journey?</h2>
+.
             <p class="mt-4 text-lg font-light text-green-100">Choose your subscription plan and experience greens like never before.</p>
             <div class="mt-8 flex justify-center">
                 <button id="cta-order-btn" class="btn-secondary">
@@ -422,6 +423,7 @@ const state = {
     deliveryDay: null,
     allowRotation: false,
     totalPrice: 0,
+    wheatgrassQuantity: 0,
 };
 
 // For UI display and price calculation
@@ -430,8 +432,10 @@ const CUSTOM_PRICES = {
     3: 21, // 12oz
     4: 26, // 16oz
 };
+const WHEATGRASS_PRICE = 3.50;
+
 // Updated list including mixes and single varieties
-const CROP_NAMES = ['Super Green Mix', 'Spicy Green Mix', 'Sunflower', 'Pea', 'Broccoli', 'Purple Radish', 'Kale', 'Purple Kohlrabi'];
+const CROP_NAMES = ['Superfood Mix', 'Salad Mix', 'Spice It Up Mix', 'Sunflower', 'Peas', 'Radish', 'Broccoli', 'Cabbage', 'Kale', 'Lettuce'];
 
 // For Stripe Checkout Subscription - ONLY WEEKLY PLANS
 // IMPORTANT: These are placeholder IDs. Replace with your actual Stripe Price IDs.
@@ -440,6 +444,7 @@ const PRICE_IDS = {
     CUSTOM_2_UNITS_WEEKLY: 'price_1SG7FXQQDP18MPc4TZxJftwj', // For 8oz box
     CUSTOM_3_UNITS_WEEKLY: 'price_1SG7FqQQDP18MPc4SuUQovuJ', // For 12oz box
     CUSTOM_4_UNITS_WEEKLY: 'price_1SG7G6QQDP18MPc4BFRniSx0', // For 16oz box
+    WHEATGRASS_WEEKLY: 'price_WHEATGRASS_TRAY_WEEKLY', // <-- ADD THIS PLACEHOLDER
 };
 
 // --- DOM Elements ---
@@ -478,6 +483,7 @@ function resetStateAndUI() {
     state.deliveryDay = null;
     state.allowRotation = false;
     state.totalPrice = 0;
+    state.wheatgrassQuantity = 0;
     // Reset selection visuals
     document.querySelectorAll('#delivery-day-options .selected').forEach(el => el.classList.remove('selected'));
     document.getElementById('details-form').reset();
@@ -515,8 +521,9 @@ function prevStep() {
 
 function handleCustomCropChange(cropName, action) {
     if (action === 'add') {
-        if (Object.keys(state.customBox).length >= 4) {
-            showMessageBox('You can select a maximum of 4 different types of greens for a custom box.');
+        const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
+        if (totalUnits >= 4) {
+            showMessageBox('You can select a maximum of 4 items (for a 16oz box).');
             return;
         }
         state.customBox[cropName] = (state.customBox[cropName] || 0) + 1;
@@ -530,12 +537,29 @@ function handleCustomCropChange(cropName, action) {
     updateSummaryAndPrice();
 }
 
+function handleWheatgrassChange(action) {
+    if (action === 'add') {
+        state.wheatgrassQuantity++;
+    } else if (action === 'remove' && state.wheatgrassQuantity > 0) {
+        state.wheatgrassQuantity--;
+    }
+    updateCustomBuilderUI();
+    updateSummaryAndPrice();
+}
+
 function proceedFromCustom() {
     const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
-    if (totalUnits < 2) {
-        showMessageBox('Please select at least two items (for an 8oz box) to proceed.');
+    
+    if (totalUnits === 0 && state.wheatgrassQuantity === 0) {
+        showMessageBox('Your box is empty. Please select some items to proceed.');
         return;
     }
+
+    if (totalUnits > 0 && totalUnits < 2) {
+        showMessageBox('The minimum custom box size is 2 items (8oz). Please add more items to your box.');
+        return;
+    }
+
     renderStep(3);
     updateSummaryAndPrice();
 }
@@ -548,19 +572,24 @@ function updateCustomBuilderUI() {
 
     if (Object.keys(state.customBox).length === 0) {
          customBoxEl.innerHTML = `<p class="text-sm text-gray-400 text-center mt-12">Your items will appear here.</p>`;
-         return;
+    } else {
+        for (const [crop, qty] of Object.entries(state.customBox)) {
+            customBoxEl.innerHTML += `
+                <div class="crop-option">
+                    <span class="text-sm">${crop} (${qty * 4}oz)</span>
+                    <div class="flex items-center gap-3">
+                        <button class="qty-btn !w-7 !h-7" onclick="handleCustomCropChange('${crop}', 'remove')">-</button>
+                        <span class="font-bold w-4 text-center">${qty}</span>
+                        <button class="qty-btn !w-7 !h-7" onclick="handleCustomCropChange('${crop}', 'add')">+</button>
+                    </div>
+                </div>`;
+        }
     }
 
-    for (const [crop, qty] of Object.entries(state.customBox)) {
-        customBoxEl.innerHTML += `
-            <div class="crop-option">
-                <span class="text-sm">${crop} (${qty * 4}oz)</span>
-                <div class="flex items-center gap-3">
-                    <button class="qty-btn !w-7 !h-7" onclick="handleCustomCropChange('${crop}', 'remove')">-</button>
-                    <span class="font-bold w-4 text-center">${qty}</span>
-                    <button class="qty-btn !w-7 !h-7" onclick="handleCustomCropChange('${crop}', 'add')">+</button>
-                </div>
-            </div>`;
+    // Update wheatgrass qty
+    const wheatgrassQtyEl = document.getElementById('wheatgrass-qty');
+    if (wheatgrassQtyEl) {
+        wheatgrassQtyEl.textContent = state.wheatgrassQuantity;
     }
 }
 
@@ -575,6 +604,10 @@ function generateCustomBuilderHTML() {
             8oz (2 items): <strong>$15</strong> | 12oz (3 items): <strong>$21</strong> | 16oz (4 items): <strong>$26</strong>
         </p>
 
+        <div class="text-center bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-lg mb-6 text-sm">
+            <strong>Please Note:</strong> On your delivery day, please set a cooler out to receive your order. This helps keep your greens safe and fresh!
+        </div>
+
         <div class="grid grid-cols-2 gap-4 mb-6">
             <div>
                 <h4 class="font-semibold text-center mb-3">Available Greens</h4>
@@ -586,6 +619,21 @@ function generateCustomBuilderHTML() {
                     </div>
                 `).join('')}
                 </div>
+                
+                <h4 class="font-semibold text-center mb-3 mt-4">Add-Ons</h4>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                        <span class="text-sm">Wheatgrass (5x5 tray)</span>
+                        <div class="flex items-center gap-3">
+                            <button class="qty-btn !w-7 !h-7" onclick="handleWheatgrassChange('remove')">-</button>
+                            <span id="wheatgrass-qty" class="font-bold w-4 text-center">${state.wheatgrassQuantity}</span>
+                            <button class="qty-btn !w-7 !h-7" onclick="handleWheatgrassChange('add')">+</button>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 p-2 bg-gray-100 rounded-lg">
+                    <strong>Wheatgrass Trays:</strong> Please leave used/spent trays out with your cooler for pick-up. We will sanitize and reuse them!
+                </p>
             </div>
             <div>
                 <h4 class="font-semibold text-center mb-3">Your Box</h4>
@@ -620,14 +668,24 @@ function updateSummaryAndPrice() {
     }
     
     let totalOz = totalUnits * 4;
-    summaryHTML = `<p><strong>Custom Weekly Box (${totalOz}oz)</strong></p>`;
-    if(totalUnits > 0) {
+    summaryHTML = ''; // Start empty
+
+    if (totalUnits > 0) {
+        summaryHTML = `<p><strong>Custom Weekly Box (${totalOz}oz)</strong></p>`;
         for (const [crop, qty] of Object.entries(state.customBox)) {
             summaryHTML += `<p class="pl-2 text-sm text-gray-600">${qty} x ${crop} (4oz)</p>`;
         }
     }
 
-    let finalPrice = basePrice;
+    // --- NEW WHEATGRASS LOGIC ---
+    let wheatgrassTotal = state.wheatgrassQuantity * WHEATGRASS_PRICE;
+    if (state.wheatgrassQuantity > 0) {
+         summaryHTML += `<p class="mt-2"><strong>Add-ons</strong></p>`;
+         summaryHTML += `<p class="pl-2 text-sm text-gray-600">${state.wheatgrassQuantity} x Wheatgrass (5x5 tray)</p>`;
+    }
+    // --- END NEW LOGIC ---
+
+    let finalPrice = basePrice + wheatgrassTotal;
     
     // No frequency modifier is needed anymore as it's always weekly.
     state.totalPrice = finalPrice;
@@ -668,34 +726,65 @@ async function handleFormSubmit(event) {
 
     // --- Build payload for backend ---
     const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
-    const key = `CUSTOM_${totalUnits}_UNITS_WEEKLY`;
-    const size = `${totalUnits * 4}oz`;
+    const lineItems = [];
+    
+    if (totalUnits > 0) {
+        if (totalUnits < 2) {
+             showMessageBox('Your custom box must have at least 2 items (8oz).');
+             submitButton.disabled = false;
+             submitButton.textContent = 'Proceed to Payment';
+             return;
+        }
+        const key = `CUSTOM_${totalUnits}_UNITS_WEEKLY`;
+        const boxPriceId = PRICE_IDS[key];
+        
+        if (!boxPriceId) {
+             console.error(`Price ID not found for key: ${key}`);
+             showMessageBox('Sorry, this subscription option is not available at the moment.');
+             submitButton.disabled = false;
+             submitButton.textContent = 'Proceed to Payment';
+             return;
+        }
+        lineItems.push({ price: boxPriceId, quantity: 1 });
+    }
 
-    if (!PRICE_IDS[key]) {
-         console.error(`Price ID not found for key: ${key}`);
-         showMessageBox('Sorry, this subscription option is not available at the moment.');
+    if (state.wheatgrassQuantity > 0) {
+        if (!PRICE_IDS.WHEATGRASS_WEEKLY) {
+            console.error('Wheatgrass Price ID not found.');
+            showMessageBox('Sorry, wheatgrass is not available at the moment.');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Proceed to Payment';
+            return;
+        }
+        lineItems.push({ price: PRICE_IDS.WHEATGRASS_WEEKLY, quantity: state.wheatgrassQuantity });
+    }
+
+    if (lineItems.length === 0) {
+         showMessageBox('Your box is empty. Please add some items.');
          submitButton.disabled = false;
          submitButton.textContent = 'Proceed to Payment';
          return;
     }
 
-    const priceId = PRICE_IDS[key];
+    const size = totalUnits > 0 ? `${totalUnits * 4}oz` : 'N/A';
 
     const boxMeta = {
-        boxType: 'custom',
+        boxType: totalUnits > 0 ? 'custom' : 'addons_only',
         preset: null,
         size: size,
         cadence: 'weekly',
         deliveryDay: state.deliveryDay,
         allowRotation: state.allowRotation,
         customContents: JSON.stringify(state.customBox),
+        wheatgrassQuantity: state.wheatgrassQuantity,
     };
 
     try {
+        // Send lineItems array instead of single priceId
         const response = await fetch('/.netlify/functions/create-checkout-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', },
-            body: JSON.stringify({ priceId, quantity: 1, boxMeta }),
+            body: JSON.stringify({ lineItems, boxMeta }), // Changed payload
         });
 
         const session = await response.json();
