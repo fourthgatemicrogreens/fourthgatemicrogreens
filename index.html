@@ -422,6 +422,7 @@ const state = {
     customBox: {}, // { cropName: quantity of 4oz units }
     deliveryDay: null,
     allowRotation: false,
+    rotationFavorites: '', // To store customer rotation preferences
     totalPrice: 0,
     wheatgrassQuantity: 0,
 };
@@ -482,6 +483,7 @@ function resetStateAndUI() {
     state.customBox = {};
     state.deliveryDay = null;
     state.allowRotation = false;
+    state.rotationFavorites = ''; // Reset rotation preferences
     state.totalPrice = 0;
     state.wheatgrassQuantity = 0;
     // Reset selection visuals
@@ -594,6 +596,12 @@ function updateCustomBuilderUI() {
 }
 
 function generateCustomBuilderHTML() {
+    const CROP_DESCRIPTIONS = {
+        'Superfood Mix': 'Peas, kale, broccoli',
+        'Salad Mix': 'Lettuce, cabbage, kale',
+        'Spice It Up Mix': 'Radish, cabbage, broccoli'
+    };
+
     return `
         <h3 class="text-3xl font-bold text-center mb-2" style="font-family: 'Playfair Display', serif;">Build Your Weekly Box</h3>
         <p class="text-center text-gray-600 mb-2 text-sm">
@@ -613,9 +621,12 @@ function generateCustomBuilderHTML() {
                 <h4 class="font-semibold text-center mb-3">Available Greens</h4>
                 <div class="space-y-2">
                 ${CROP_NAMES.map(crop => `
-                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                        <span>${crop}</span>
-                        <button class="add-btn" data-crop="${crop}"></button>
+                    <div class="p-2 bg-gray-50 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <span>${crop}</span>
+                            <button class="add-btn" data-crop="${crop}"></button>
+                        </div>
+                        ${CROP_DESCRIPTIONS[crop] ? `<p class="text-xs text-gray-500 mt-1">${CROP_DESCRIPTIONS[crop]}</p>` : ''}
                     </div>
                 `).join('')}
                 </div>
@@ -645,6 +656,9 @@ function generateCustomBuilderHTML() {
                         <input type="checkbox" id="rotation-checkbox" class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 mr-2">
                         Allow us to rotate your selections for variety?
                     </label>
+                    <div id="rotation-details" class="hidden mt-2">
+                        <textarea id="rotation-textarea" class="w-full p-2 text-sm rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" rows="3" placeholder="Let us know your favorites for rotation! (e.g., 'I'd love to try any of the mixes and sunflower.')"></textarea>
+                    </div>
                 </div>
             </div>
         </div>
@@ -701,9 +715,25 @@ function addStep2EventListeners() {
         btn.addEventListener('click', () => handleCustomCropChange(btn.dataset.crop, 'add'));
     });
     const rotationCheckbox = document.getElementById('rotation-checkbox');
+    const rotationDetails = document.getElementById('rotation-details');
+    const rotationTextarea = document.getElementById('rotation-textarea');
+
     if(rotationCheckbox) {
         rotationCheckbox.addEventListener('change', (e) => {
             state.allowRotation = e.target.checked;
+            if (state.allowRotation) {
+                rotationDetails.classList.remove('hidden');
+            } else {
+                rotationDetails.classList.add('hidden');
+                rotationTextarea.value = ''; // Clear text if unchecked
+                state.rotationFavorites = ''; // Clear state if unchecked
+            }
+        });
+    }
+
+    if (rotationTextarea) {
+        rotationTextarea.addEventListener('input', (e) => {
+            state.rotationFavorites = e.target.value;
         });
     }
 }
@@ -775,6 +805,7 @@ async function handleFormSubmit(event) {
         cadence: 'weekly',
         deliveryDay: state.deliveryDay,
         allowRotation: state.allowRotation,
+        rotationFavorites: state.rotationFavorites, // Send preferences to backend
         customContents: JSON.stringify(state.customBox),
         wheatgrassQuantity: state.wheatgrassQuantity,
     };
@@ -870,4 +901,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-
