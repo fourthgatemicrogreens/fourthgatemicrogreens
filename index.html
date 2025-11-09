@@ -269,6 +269,11 @@ body {
         <p class="mt-6 text-xl md:text-2xl font-light text-gray-200 max-w-2xl mx-auto">
             Nutrient-dense, farm-fresh microgreens delivered from our indoor farm right to your door.
         </p>
+        <!-- ADDED DELIVERY AREA NOTICE -->
+        <p class="mt-4 text-lg font-medium text-green-200 bg-black/30 inline-block px-4 py-2 rounded-full backdrop-blur-sm">
+            Currently delivering to East Portland, Gresham, and Troutdale.
+        </p>
+        <!-- END ADDED NOTICE -->
         <div class="mt-12 flex justify-center">
             <button id="hero-order-btn" class="btn-primary floating">
                 Build Your Box
@@ -632,6 +637,12 @@ function generateCustomBuilderHTML() {
             <strong>Please Note:</strong> On your delivery day, please set a cooler out to receive your order. This helps keep your greens safe and fresh!
         </div>
 
+        <!-- ADDED DELIVERY AREA NOTICE IN MODAL -->
+        <div class="text-center bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg mb-6 text-sm">
+            <strong>Delivery Area:</strong> We currently only deliver to East Portland, Gresham, and Troutdale.
+        </div>
+        <!-- END ADDED NOTICE IN MODAL -->
+
         <div class="grid grid-cols-2 gap-4 mb-6">
             <div>
                 <h4 class="font-semibold text-center mb-3">Available Greens</h4>
@@ -667,13 +678,13 @@ function generateCustomBuilderHTML() {
                 <div id="custom-box-items" class="bg-gray-100 p-3 rounded-lg min-h-[150px]">
                     <p class="text-sm text-gray-400 text-center mt-12">Your items will appear here.</p>
                 </div>
-                 <div class="mt-4 text-center">
-                    <label class="flex items-center justify-center text-sm text-gray-600">
-                        <input type="checkbox" id="rotation-checkbox" class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 mr-2">
-                        Allow us to rotate your selections for variety?
+                 <div class="mt-4 text-center px-4">
+                    <label class="flex flex-col items-center justify-center text-sm text-gray-600 cursor-pointer">
+                        <span class="mb-2">Want to allow us to rotate your varieties of choice week to week? Click the box below and let us know your favorites!</span>
+                        <input type="checkbox" id="rotation-checkbox" class="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
                     </label>
-                    <div id="rotation-details" class="hidden mt-2">
-                        <textarea id="rotation-textarea" class="w-full p-2 text-sm rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" rows="3" placeholder="Let us know your favorites for rotation! (e.g., 'I'd love to try any of the mixes and sunflower.')"></textarea>
+                    <div id="rotation-details" class="hidden mt-3">
+                        <textarea id="rotation-textarea" class="w-full p-3 text-sm rounded-lg border-2 border-green-100 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235] placeholder-gray-400" rows="3" placeholder="e.g., 'I'd love to try any of the mixes and sunflower on rotation.'"></textarea>
                     </div>
                 </div>
             </div>
