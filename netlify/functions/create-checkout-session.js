@@ -6,7 +6,6 @@ exports.handler = async (event) => {
     const { lineItems, priceId, boxMeta } = JSON.parse(event.body);
 
     // 1. Determine the items to be purchased
-    // We prefer 'lineItems' (new way), but fall back to 'priceId' (old way) if needed.
     let finalLineItems = lineItems;
     if (!finalLineItems && priceId) {
         finalLineItems = [{ price: priceId, quantity: 1 }];
@@ -24,10 +23,14 @@ exports.handler = async (event) => {
       payment_method_types: ['card'],
       line_items: finalLineItems,
       mode: 'subscription',
-      // 3. Use the new success page you just created!
       success_url: `${process.env.URL}/success.html`,
       cancel_url: `${process.env.URL}/`,
+      // Attach metadata to the Checkout Session itself
       metadata: boxMeta,
+      // ALSO attach metadata to the Subscription object that will be created
+      subscription_data: {
+        metadata: boxMeta,
+      },
     });
 
     return {
