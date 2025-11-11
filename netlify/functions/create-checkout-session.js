@@ -1,52 +1,33 @@
+// netlify/functions/create-checkout-session.js
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-const YOUR_DOMAIN = process.env.YOUR_DOMAIN || 'http://localhost:8888';
-
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
   try {
-    // Expecting: { priceId, quantity, boxMeta }
-    const { priceId, quantity = 1, boxMeta } = JSON.parse(event.body || '{}');
+    const { lineItems, priceId, boxMeta } = JSON.parse(event.body);
 
-    if (!priceId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Missing priceId' }),
-      };
+    // 1. Determine the items to be purchased
+    // We prefer 'lineItems' (new way), but fall back to 'priceId' (old way) if needed.
+    let finalLineItems = lineItems;
+    if (!finalLineItems && priceId) {
+        finalLineItems = [{ price: priceId, quantity: 1 }];
     }
 
+    if (!finalLineItems || finalLineItems.length === 0) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'No items selected for purchase.' }),
+        };
+    }
+
+    // 2. Create the Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
-      mode: 'subscription', // must match your Price configuration
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity,
-        },
-      ],
-
-      // Collect shipping info
-      shipping_address_collection: {
-        allowed_countries: ['US', 'CA'],
-      },
-
-      // Attach metadata to subscription
-      subscription_data: {
-        metadata: {
-          ...(boxMeta || {}),
-        },
-      },
-
-      // Also attach metadata at session level
-      metadata: {
-        ...(boxMeta || {}),
-      },
-
-      success_url: `${YOUR_DOMAIN}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${YOUR_DOMAIN}/cancel.html`,
+      line_items: finalLineItems,
+      mode: 'subscription',
+      // 3. Use the new success page you just created!
+      success_url: `${process.env.URL}/success.html`,
+      cancel_url: `${process.env.URL}/`,
+      metadata: boxMeta,
     });
 
     return {
@@ -54,14 +35,10 @@ exports.handler = async (event) => {
       body: JSON.stringify({ sessionId: session.id }),
     };
   } catch (error) {
-    console.error('❌ Stripe API Error:', error);
-
-    // Return the error message back to frontend for debugging
+    console.error('Stripe Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: error.message || 'Failed to create Stripe Checkout session.',
-      }),
+      body: JSON.stringify({ error: 'Failed to create checkout session. Please try again.' }),
     };
   }
 };
