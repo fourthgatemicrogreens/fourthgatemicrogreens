@@ -329,7 +329,7 @@ body {
                         Fourth gate microgreens was founded on a simple belief; everyone deserves access to fresh, local and sustainably grown nutrient rich foods. As owner and head grower my journey in agriculture has been life long. From working on various farms throughout Oregon, being in the professional landscaping industry and going to school studying both horticulture and permaculture.. Working with plants and nature is a labor of love for me, my biggest passion in life and the gift I enjoy sharing most with others. This offering of sharing my passions and gifts with my community through these greens comes straight from the heart.
                     </p>
                     <p class="text-lg leading-relaxed">
-						We are committed to a healthier planet, using only organic, earth-friendly methods to bring the vibrant power of nature straight to your table.
+                        We are committed to a healthier planet, using only organic, earth-friendly methods to bring the vibrant power of nature straight to your table.
                     </p>
                 </div>
                 <div class="grid grid-cols-2 gap-4 reveal" style="transition-delay: 150ms;">
@@ -344,7 +344,7 @@ body {
     <section id="nutrition" class="py-24 bg-[#F2F9F2]">
         <div class="max-w-4xl mx-auto px-6">
             <h2 class="text-4xl md:text-5xl section-title text-center reveal mb-12">Nature's Power on Your Plate</h2>
-            
+             
             <div class="space-y-4 reveal">
                 <!-- Nutritional Profiles Accordion -->
                 <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -400,7 +400,7 @@ body {
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </span>
                     </button>
-                     <div class="accordion-content hidden px-6 pb-6">
+                      <div class="accordion-content hidden px-6 pb-6">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
                             <div>
                                 <h4 class="text-lg font-serif text-[#3B7235] mb-3">Fresh & Raw</h4>
@@ -516,24 +516,14 @@ body {
                 </div>
             </div>
 
-            <form id="details-form">
-                <!-- NEW: Delivery Address Fields -->
-                <div class="mb-6">
-                    <h4 class="font-semibold text-lg mb-3">Delivery Address</h4>
-                    <input type="text" id="address-line1" placeholder="Street Address" class="w-full p-3 mb-3 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
-                    <input type="text" id="address-line2" placeholder="Apartment, suite, etc. (optional)" class="w-full p-3 mb-3 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]">
-                    <div class="grid grid-cols-2 gap-3">
-                        <input type="text" id="address-city" placeholder="City" class="w-full p-3 mb-3 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
-                        <input type="text" id="address-zip" placeholder="ZIP Code" class="w-full p-3 mb-3 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
-                    </div>
-                </div>
-                <!-- END NEW -->
+            <!-- REMOVED MANUAL ADDRESS FORM, REPLACED WITH SIMPLE BUTTON -->
+            <div class="text-center">
+                <p class="text-sm text-gray-500 mb-4">
+                    You will enter your shipping address securely during the next step.
+                </p>
+                <button id="proceed-to-stripe-btn" class="w-full btn-primary">Proceed to Secure Payment</button>
+            </div>
 
-                <h4 class="font-semibold text-lg mb-3">Contact Info</h4>
-                <input type="text" placeholder="Full Name" class="w-full p-3 mb-4 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
-                <input type="email" placeholder="Email Address" class="w-full p-3 mb-4 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
-                <button type="submit" class="w-full btn-primary">Proceed to Payment</button>
-            </form>
             <button class="mt-6 text-gray-500 hover:text-gray-700 transition w-full text-center" onclick="prevStep()">← Back</button>
         </div>
 
@@ -559,12 +549,7 @@ const state = {
     rotationFavorites: '', // To store customer rotation preferences
     totalPrice: 0,
     wheatgrassQuantity: 0,
-    deliveryAddress: { // NEW: To store address
-        line1: '',
-        line2: '',
-        city: '',
-        zip: ''
-    }
+    // REMOVED: deliveryAddress state is no longer needed on frontend
 };
 
 // For UI display and price calculation
@@ -600,7 +585,7 @@ const orderButtons = [
 ];
 const messageBox = document.getElementById('message-box');
 const messageOkBtn = document.getElementById('message-ok-btn');
-const detailsForm = document.getElementById('details-form');
+// REMOVED: const detailsForm = document.getElementById('details-form');
 const modalCloseBtn = document.querySelector('.modal-close');
 
 
@@ -626,11 +611,9 @@ function resetStateAndUI() {
     state.rotationFavorites = ''; // Reset rotation preferences
     state.totalPrice = 0;
     state.wheatgrassQuantity = 0;
-    // Reset address
-    state.deliveryAddress = { line1: '', line2: '', city: '', zip: '' };
     // Reset selection visuals
     document.querySelectorAll('#delivery-day-options .selected').forEach(el => el.classList.remove('selected'));
-    document.getElementById('details-form').reset();
+    // REMOVED: document.getElementById('details-form').reset();
 }
 
 function renderStep(step) {
@@ -693,7 +676,7 @@ function handleWheatgrassChange(action) {
 
 function proceedFromCustom() {
     const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
-    
+     
     if (totalUnits === 0 && state.wheatgrassQuantity === 0) {
         showMessageBox('Your box is empty. Please select some items to proceed.');
         return;
@@ -715,7 +698,7 @@ function updateCustomBuilderUI() {
     customBoxEl.innerHTML = ''; 
 
     if (Object.keys(state.customBox).length === 0) {
-         customBoxEl.innerHTML = `<p class="text-sm text-gray-400 text-center mt-12">Your items will appear here.</p>`;
+          customBoxEl.innerHTML = `<p class="text-sm text-gray-400 text-center mt-12">Your items will appear here.</p>`;
     } else {
         for (const [crop, qty] of Object.entries(state.customBox)) {
             customBoxEl.innerHTML += `
@@ -778,7 +761,7 @@ function generateCustomBuilderHTML() {
                     </div>
                 `).join('')}
                 </div>
-                
+                 
                 <h4 class="font-semibold text-center mb-3 mt-4">Add-Ons</h4>
                 <div class="space-y-2">
                     <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
@@ -828,7 +811,7 @@ function updateSummaryAndPrice() {
     if (totalUnits >= 2) {
         basePrice = CUSTOM_PRICES[totalUnits] || 0;
     }
-    
+     
     let totalOz = totalUnits * 4;
     summaryHTML = ''; // Start empty
 
@@ -842,13 +825,13 @@ function updateSummaryAndPrice() {
     // --- NEW WHEATGRASS LOGIC ---
     let wheatgrassTotal = state.wheatgrassQuantity * WHEATGRASS_PRICE;
     if (state.wheatgrassQuantity > 0) {
-         summaryHTML += `<p class="mt-2"><strong>Add-ons</strong></p>`;
-         summaryHTML += `<p class="pl-2 text-sm text-gray-600">${state.wheatgrassQuantity} x Wheatgrass (5x5 tray)</p>`;
+          summaryHTML += `<p class="mt-2"><strong>Add-ons</strong></p>`;
+          summaryHTML += `<p class="pl-2 text-sm text-gray-600">${state.wheatgrassQuantity} x Wheatgrass (5x5 tray)</p>`;
     }
     // --- END NEW LOGIC ---
 
     let finalPrice = basePrice + wheatgrassTotal;
-    
+     
     // No frequency modifier is needed anymore as it's always weekly.
     state.totalPrice = finalPrice;
     summaryEl.innerHTML = summaryHTML;
@@ -886,9 +869,8 @@ function addStep2EventListeners() {
     }
 }
 
-async function handleFormSubmit(event) {
-    event.preventDefault();
-
+async function handleProceedToStripe() {
+    // No event.preventDefault() needed if it's just a button click, not a form submit
     if (!state.deliveryDay) {
         showMessageBox('Please select a preferred delivery day.');
         return;
@@ -898,38 +880,29 @@ async function handleFormSubmit(event) {
         return;
     }
 
-    const submitButton = event.target.querySelector('button[type="submit"]');
+    const submitButton = document.getElementById('proceed-to-stripe-btn');
     submitButton.disabled = true;
     submitButton.textContent = 'Processing...';
-
-    // Capture address from form
-    state.deliveryAddress = {
-        line1: document.getElementById('address-line1').value,
-        line2: document.getElementById('address-line2').value,
-        city: document.getElementById('address-city').value,
-        zip: document.getElementById('address-zip').value,
-        country: 'US' // Defaulting to US based on your location
-    };
 
     // --- Build payload for backend ---
     const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
     const lineItems = [];
-    
+     
     if (totalUnits > 0) {
         if (totalUnits < 2) {
              showMessageBox('Your custom box must have at least 2 items (8oz).');
              submitButton.disabled = false;
-             submitButton.textContent = 'Proceed to Payment';
+             submitButton.textContent = 'Proceed to Secure Payment';
              return;
         }
         const key = `CUSTOM_${totalUnits}_UNITS_WEEKLY`;
         const boxPriceId = PRICE_IDS[key];
-        
+         
         if (!boxPriceId) {
              console.error(`Price ID not found for key: ${key}`);
              showMessageBox('Sorry, this subscription option is not available at the moment.');
              submitButton.disabled = false;
-             submitButton.textContent = 'Proceed to Payment';
+             submitButton.textContent = 'Proceed to Secure Payment';
              return;
         }
         lineItems.push({ price: boxPriceId, quantity: 1 });
@@ -940,7 +913,7 @@ async function handleFormSubmit(event) {
             console.error('Wheatgrass Price ID not found.');
             showMessageBox('Sorry, wheatgrass is not available at the moment.');
             submitButton.disabled = false;
-            submitButton.textContent = 'Proceed to Payment';
+            submitButton.textContent = 'Proceed to Secure Payment';
             return;
         }
         lineItems.push({ price: PRICE_IDS.WHEATGRASS_WEEKLY, quantity: state.wheatgrassQuantity });
@@ -949,7 +922,7 @@ async function handleFormSubmit(event) {
     if (lineItems.length === 0) {
          showMessageBox('Your box is empty. Please add some items.');
          submitButton.disabled = false;
-         submitButton.textContent = 'Proceed to Payment';
+         submitButton.textContent = 'Proceed to Secure Payment';
          return;
     }
 
@@ -962,28 +935,23 @@ async function handleFormSubmit(event) {
         cadence: 'weekly',
         deliveryDay: state.deliveryDay,
         allowRotation: state.allowRotation,
-        rotationFavorites: state.rotationFavorites, // Send preferences to backend
+        rotationFavorites: state.rotationFavorites,
         customContents: JSON.stringify(state.customBox),
         wheatgrassQuantity: state.wheatgrassQuantity,
-        deliveryAddress: JSON.stringify(state.deliveryAddress) // NEW: Send address as JSON string
+        // REMOVED: deliveryAddress is no longer sent here
     };
 
     try {
-        // PREPARE PAYLOAD: Try to satisfy both new and old backend configurations
         const payload = { lineItems, boxMeta };
-        
-        // BACKWARD COMPATIBILITY: If there is exactly one item type, also send 'priceId' 
-        // This helps if your backend hasn't been updated to look for 'lineItems' yet.
+         
         if (lineItems.length === 1) {
             payload.priceId = lineItems[0].price;
-            // NOTE: If you have an old backend and a customer orders e.g., 2 Wheatgrass trays (quantity 2),
-            // an old backend might default to quantity 1. Updating the backend is strictly recommended.
         }
 
         const response = await fetch('/.netlify/functions/create-checkout-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', },
-            body: JSON.stringify(payload), // Use the new hybrid payload
+            body: JSON.stringify(payload),
         });
 
         const session = await response.json();
@@ -991,7 +959,7 @@ async function handleFormSubmit(event) {
         if (session.error) {
             showMessageBox(session.error);
             submitButton.disabled = false;
-            submitButton.textContent = 'Proceed to Payment';
+            submitButton.textContent = 'Proceed to Secure Payment';
             return;
         }
 
@@ -1003,13 +971,13 @@ async function handleFormSubmit(event) {
         if (result.error) {
             showMessageBox(result.error.message);
             submitButton.disabled = false;
-            submitButton.textContent = 'Proceed to Payment';
+            submitButton.textContent = 'Proceed to Secure Payment';
         }
     } catch (error) {
         console.error('Error:', error);
         showMessageBox('Could not connect to the payment server. Please try again later.');
         submitButton.disabled = false;
-        submitButton.textContent = 'Proceed to Payment';
+        submitButton.textContent = 'Proceed to Secure Payment';
     }
 }
 
@@ -1026,10 +994,12 @@ document.addEventListener('DOMContentLoaded', () => {
     orderButtons.forEach(btn => btn.addEventListener('click', openModal));
     modalCloseBtn.addEventListener('click', closeModal);
     messageOkBtn.addEventListener('click', closeMessageBox);
-    
-    const detailsFormElement = document.getElementById('details-form');
-    if (detailsFormElement) {
-        detailsFormElement.addEventListener('submit', handleFormSubmit);
+     
+    // REMOVED: Form submit listener.
+    // ADDED: Button click listener for the new proceed button.
+    const proceedBtn = document.getElementById('proceed-to-stripe-btn');
+    if (proceedBtn) {
+        proceedBtn.addEventListener('click', handleProceedToStripe);
     }
 
     document.getElementById('delivery-day-options').addEventListener('click', e => {
@@ -1071,7 +1041,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             const content = btn.nextElementSibling;
             const icon = btn.querySelector('span');
-            
+             
             // Toggle current accordion
             content.classList.toggle('hidden');
             icon.classList.toggle('rotate-180');
