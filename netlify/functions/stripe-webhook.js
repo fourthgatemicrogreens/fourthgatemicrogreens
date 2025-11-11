@@ -30,66 +30,64 @@ exports.handler = async (event) => {
     const session = stripeEvent.data.object;
     console.log(`Processing checkout session ${session.id}`);
 
-    // Start with whatever metadata is on the session itself
-    let finalMetadata = session.metadata || {};
+    // 1. Fetch full customer details to ensure we get name and email
+    let customer = {};
+    if (session.customer) {
+        try {
+            customer = await stripe.customers.retrieve(session.customer);
+        } catch (e) {
+            console.error("Error fetching customer:", e);
+        }
+    }
 
-    // If there's a subscription, fetch it to get its metadata too
+    // 2. Merge metadata from session and subscription
+    let finalMetadata = session.metadata || {};
     if (session.subscription) {
         try {
-            console.log(`Fetching subscription ${session.subscription} to get metadata...`);
             const subscription = await stripe.subscriptions.retrieve(session.subscription);
-            // Merge them, trusting subscription metadata more if there's a conflict
             finalMetadata = { ...finalMetadata, ...subscription.metadata };
-            console.log("Merged metadata:", finalMetadata);
         } catch (error) {
             console.error("Error fetching subscription:", error);
         }
     }
 
-    // Safely parse customContents, defaulting to an empty object if missing or invalid
+    // 3. Safely parse JSON fields from metadata
     let parsedCustomContents = {};
-    if (finalMetadata.customContents) {
-        try {
-            parsedCustomContents = JSON.parse(finalMetadata.customContents);
-        } catch (e) {
-            console.error("Error parsing customContents JSON:", e);
-        }
-    }
+    try {
+        parsedCustomContents = finalMetadata.customContents ? JSON.parse(finalMetadata.customContents) : {};
+    } catch (e) { console.error("Error parsing customContents:", e); }
 
-    // Parse the new delivery address from metadata
-    let deliveryAddress = {};
-    if (finalMetadata.deliveryAddress) {
-        try {
-            deliveryAddress = JSON.parse(finalMetadata.deliveryAddress);
-        } catch (e) {
-            console.error("Error parsing deliveryAddress JSON:", e);
-        }
-    }
+    let parsedDeliveryAddress = {};
+    try {
+        parsedDeliveryAddress = finalMetadata.deliveryAddress ? JSON.parse(finalMetadata.deliveryAddress) : {};
+    } catch (e) { console.error("Error parsing deliveryAddress:", e); }
 
+    // 4. Construct the final order object for Firebase
     const orderData = {
       stripeSessionId: session.id,
       stripeCustomerId: session.customer,
-      customerEmail: session.customer_details?.email,
-      customerName: session.customer_details?.name,
+      // Try getting email/name from multiple possible sources, preferring the most reliable first
+      customerEmail: customer.email || session.customer_details?.email || session.customer_email,
+      customerName: customer.name || session.customer_details?.name,
       amountTotal: session.amount_total / 100,
       currency: session.currency,
       paymentStatus: session.payment_status,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       
-      // Explicitly save these fields from our final merged metadata
+      // Custom Business Data
       boxType: finalMetadata.boxType || null,
       customContents: parsedCustomContents,
       deliveryDay: finalMetadata.deliveryDay || null,
       rotationFavorites: finalMetadata.rotationFavorites || null,
       wheatgrassQuantity: finalMetadata.wheatgrassQuantity ? parseInt(finalMetadata.wheatgrassQuantity) : 0,
-      deliveryAddress: deliveryAddress, // Save the new address object
+      deliveryAddress: parsedDeliveryAddress, // Use the parsed address object
       
       subscriptionId: session.subscription || null,
     };
 
     try {
       await db.collection('orders').doc(session.id).set(orderData);
-      console.log(`SUCCESS: Order ${session.id} saved to Firebase with metadata.`);
+      console.log(`SUCCESS: Order ${session.id} saved to Firebase.`);
     } catch (error) {
       console.error('Firebase save error:', error);
       return { statusCode: 500, body: 'Error saving to database' };
@@ -98,5 +96,3 @@ exports.handler = async (event) => {
 
   return { statusCode: 200, body: JSON.stringify({ received: true }) };
 };
-
-Once you've updated both the frontend (`index-31.html`) and the backend (`stripe-webhook.js`), your new orders will include the full delivery address in Firebase!
