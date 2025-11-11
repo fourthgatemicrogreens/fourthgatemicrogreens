@@ -1,8 +1,9 @@
+// netlify/functions/handle-webhook.js
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
 const sgMail = require('@sendgrid/mail');
 
-// Init Firebase Admin
+// --- INITIALIZATION ---
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -13,19 +14,45 @@ if (!admin.apps.length) {
   });
 }
 const db = admin.firestore();
-
-// Init SendGrid
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 exports.config = { bodyParser: false };
 
+// --- HELPER: Format Order Items for Email ---
+function formatOrderItemsHTML(metadata, customContents) {
+    let html = '<ul style="padding-left:20px; margin-top:0;">';
+    
+    // Custom Box Items
+    for (const [crop, qty] of Object.entries(customContents)) {
+        html += `<li><strong>${crop}:</strong> ${qty * 4}oz</li>`;
+    }
+    
+    // Wheatgrass
+    if (metadata.wheatgrassQuantity > 0) {
+        html += `<li><strong>Wheatgrass (5x5 tray):</strong> Qty ${metadata.wheatgrassQuantity}</li>`;
+    }
+
+    // Fallback if empty (shouldn't happen with current frontend validation)
+    if (html === '<ul style="padding-left:20px; margin-top:0;">') {
+        html += '<li>No specific items listed.</li>';
+    }
+
+    html += '</ul>';
+    
+    if (metadata.deliveryDay) {
+         html += `<p><strong>Preferred Delivery Day:</strong> ${metadata.deliveryDay}</p>`;
+    }
+
+    return html;
+}
+
+// --- MAIN HANDLER ---
 exports.handler = async (event) => {
   const sig = event.headers['stripe-signature'];
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
   let stripeEvent;
+
   try {
-    stripeEvent = stripe.webhooks.constructEvent(event.body, sig, endpointSecret);
+    stripeEvent = stripe.webhooks.constructEvent(event.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error("❌ Webhook signature verification failed:", err.message);
     return { statusCode: 400, body: `Webhook Error: ${err.message}` };
@@ -33,90 +60,144 @@ exports.handler = async (event) => {
 
   if (stripeEvent.type === 'checkout.session.completed') {
     const session = stripeEvent.data.object;
+    console.log(`Processing session ${session.id}`);
 
+    // 1. FETCH ENHANCED DATA (Customer & Subscription)
+    let customer = {};
+    if (session.customer) {
+        try {
+            customer = await stripe.customers.retrieve(session.customer);
+        } catch (e) { console.error("Error fetching customer:", e); }
+    }
+
+    // Merge metadata from subscription if it exists (crucial for recurring orders)
+    let finalMetadata = session.metadata || {};
+    if (session.subscription) {
+        try {
+            const subscription = await stripe.subscriptions.retrieve(session.subscription);
+            finalMetadata = { ...finalMetadata, ...subscription.metadata };
+        } catch (e) { console.error("Error fetching subscription:", e); }
+    }
+
+    // Parse the custom contents JSON we sent from frontend
+    let parsedCustomContents = {};
+    try {
+        parsedCustomContents = finalMetadata.customContents ? JSON.parse(finalMetadata.customContents) : {};
+    } catch (e) { console.error("Error parsing customContents:", e); }
+
+    // 2. ROBUST ADDRESS EXTRACTION (The Native Stripe way)
+    // shipping_details is usually where verified shipping addresses go in Checkout
+    const shipping = session.shipping_details || session.customer_details || customer.shipping;
+    const deliveryAddress = {
+        line1: shipping?.address?.line1 || '',
+        line2: shipping?.address?.line2 || '',
+        city: shipping?.address?.city || '',
+        state: shipping?.address?.state || '',
+        postal_code: shipping?.address?.postal_code || '',
+        country: shipping?.address?.country || '',
+        recipient_name: shipping?.name || session.customer_details?.name || 'Valued Customer'
+    };
+
+    // 3. PREPARE ORDER DATA FOR FIRESTORE
     const orderData = {
-      email: session.customer_details?.email || 'N/A',
-      amount: session.amount_total ? session.amount_total / 100 : 0,
-      address: session.customer_details?.address || {},
-      status: session.payment_status,
-      sessionId: session.id,
-      createdAt: new Date(),
+        stripeSessionId: session.id,
+        stripeCustomerId: session.customer,
+        customerEmail: session.customer_details?.email || customer.email || 'N/A',
+        customerName: deliveryAddress.recipient_name,
+        amountTotal: session.amount_total / 100,
+        currency: session.currency,
+        paymentStatus: session.payment_status,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        // Custom Metadata Fields
+        boxType: finalMetadata.boxType || 'N/A',
+        customContents: parsedCustomContents,
+        wheatgrassQuantity: finalMetadata.wheatgrassQuantity ? parseInt(finalMetadata.wheatgrassQuantity) : 0,
+        deliveryDay: finalMetadata.deliveryDay || 'N/A',
+        rotationFavorites: finalMetadata.rotationFavorites || null,
+        deliveryAddress: deliveryAddress,
+        subscriptionId: session.subscription || null,
     };
 
     try {
-      // Save order in Firestore
-      await db.collection('orders').add(orderData);
-      console.log("✅ Order saved:", orderData);
+      // 4. SAVE TO FIRESTORE
+      await db.collection('orders').doc(session.id).set(orderData);
+      console.log("✅ Order saved to Firestore:", session.id);
 
-      // Build shipping address HTML
+      // 5. SEND EMAILS (Enhanced with actual order details)
+      
+      // Prepare HTML snippets
       const addressHTML = `
-        ${orderData.address.line1 || ""} ${orderData.address.line2 || ""}<br>
-        ${orderData.address.city || ""}, ${orderData.address.state || ""} ${orderData.address.postal_code || ""}<br>
-        ${orderData.address.country || ""}
+        <strong>${deliveryAddress.recipient_name}</strong><br>
+        ${deliveryAddress.line1} ${deliveryAddress.line2}<br>
+        ${deliveryAddress.city}, ${deliveryAddress.state} ${deliveryAddress.postal_code}<br>
+        ${deliveryAddress.country}
       `;
+      
+      const orderItemsHTML = formatOrderItemsHTML(finalMetadata, parsedCustomContents);
 
-      // --- Business email ---
+      // -- Business notification email --
       const msg = {
-        to: "fourthgatemicrogreens@gmail.com",
+        to: "fourthgatemicrogreens@gmail.com", // Your business email
         from: process.env.SENDGRID_FROM_EMAIL,
-        subject: `🌱 New Order - ${orderData.email}`,
+        subject: `🌱 New Order! $${orderData.amountTotal} from ${orderData.customerName}`,
         html: `
           <h2>🌱 New Order Received</h2>
-          <p><strong>Customer:</strong> ${orderData.email}</p>
-          <p><strong>Amount:</strong> $${orderData.amount}</p>
-          <p><strong>Status:</strong> ${orderData.status}</p>
-          <p><strong>Shipping Address:</strong><br>${addressHTML}</p>
-          <p><strong>Session ID:</strong> ${orderData.sessionId}</p>
+          <p><strong>Customer:</strong> ${orderData.customerName} (${orderData.customerEmail})</p>
+          <p><strong>Amount:</strong> $${orderData.amountTotal}</p>
           <hr>
-          <small>Fourth Gate Microgreens - Order Notification</small>
+          <h3>📦 Order Contents (${finalMetadata.boxType})</h3>
+          ${orderItemsHTML}
+          ${finalMetadata.rotationFavorites ? `<p><strong>Rotation Preferences:</strong><br><em>${finalMetadata.rotationFavorites}</em></p>` : ''}
+          <hr>
+          <h3>🚚 Shipping Address</h3>
+          <p>${addressHTML}</p>
         `,
       };
-
       await sgMail.send(msg);
       console.log("📧 Business email sent");
 
-      // --- Customer confirmation email (branded) ---
-      if (orderData.email && orderData.email !== "N/A") {
+      // -- Customer confirmation email --
+      if (orderData.customerEmail && orderData.customerEmail !== 'N/A') {
         const customerMsg = {
-          to: orderData.email,
+          to: orderData.customerEmail,
           from: process.env.SENDGRID_FROM_EMAIL,
-          subject: "🌱 Your Fourth Gate Microgreens Order Confirmation",
+          subject: "🌱 Order Confirmed: Fourth Gate Microgreens",
           html: `
-            <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #eee; border-radius:10px; background:#f8f7f3;">
-              <!-- Header -->
-              <div style="text-align:center; padding-bottom:20px; border-bottom:2px solid #3B7235;">
-                <h1 style="margin:0; font-size:28px; color:#3B7235;">Fourth Gate Microgreens</h1>
-                <p style="margin:0; font-size:14px; color:#666;">Fresh, local, farm-to-table greens 🌱</p>
+            <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width:600px; margin:auto; color:#2D4026; background:#f8f7f3;">
+              <div style="background:#3B7235; padding:20px; text-align:center; color:white;">
+                <h1 style="margin:0; font-family: 'Georgia', serif;">Fourth Gate Microgreens</h1>
               </div>
+              <div style="padding:30px; background:#ffffff; border-radius:0 0 8px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <h2 style="color:#3B7235; margin-top:0;">Thank you, ${orderData.customerName.split(' ')[0]}!</h2>
+                <p>We're excited to get growing for you. Since we grow to order, please allow about two weeks for your first delivery to ensure peak freshness.</p>
+                
+                <div style="background:#F2F9F2; padding:20px; border-radius:12px; margin:25px 0;">
+                  <h3 style="margin-top:0; color:#3B7235;">🥗 Your Weekly Order</h3>
+                  ${orderItemsHTML}
+                  <p style="margin-bottom:0; margin-top:15px;"><strong>Total:</strong> $${orderData.amountTotal.toFixed(2)}/week</p>
+                </div>
 
-              <!-- Body -->
-              <div style="padding:20px 0;">
-                <h2 style="color:#2D4026;">Thank you for your order!</h2>
-                <p>We’ve received your payment of <strong>$${orderData.amount}</strong>. Your order is now being prepared.</p>
+                <div style="margin-bottom:25px;">
+                    <h3 style="color:#3B7235; border-bottom:1px solid #eee; padding-bottom:10px;">📍 Delivery Details</h3>
+                    <p>${addressHTML}</p>
+                </div>
 
-                <h3 style="margin-top:20px; color:#3B7235;">📦 Shipping Address</h3>
-                <p style="margin:0 0 10px 0;">${addressHTML}</p>
-
-                <h3 style="margin-top:20px; color:#3B7235;">🧾 Order Details</h3>
-                <p style="margin:0;"><strong>Order ID:</strong> ${orderData.sessionId}</p>
-                <p style="margin:0;"><strong>Status:</strong> ${orderData.status}</p>
+                <p style="font-size:14px; color:#666;">Need to make changes? Just reply to this email and we'll help you out.</p>
               </div>
-
-              <!-- Footer -->
-              <div style="text-align:center; border-top:2px solid #3B7235; padding-top:15px; margin-top:20px; font-size:13px; color:#666;">
-                <p>We’ll let you know when your microgreens are on their way 🌱</p>
-                <p>— The Fourth Gate Team</p>
+              <div style="text-align:center; padding:20px; font-size:12px; color:#888;">
+                © ${new Date().getFullYear()} Fourth Gate Microgreens
               </div>
             </div>
           `,
         };
-
         await sgMail.send(customerMsg);
-        console.log("📧 Customer confirmation sent to:", orderData.email);
+        console.log("📧 Customer email sent to:", orderData.customerEmail);
       }
 
     } catch (err) {
-      console.error("❌ Error:", err);
+      console.error("❌ Error in Firestore/Email processing:", err);
+      // Don't return 500 here if possible, as Stripe will retry. 
+      // If the order SAVED but email failed, we might not want to retry the whole thing.
     }
   }
 
