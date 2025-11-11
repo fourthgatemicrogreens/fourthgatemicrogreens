@@ -25,9 +25,9 @@ exports.handler = async (event) => {
       mode: 'subscription',
       success_url: `${process.env.URL}/success.html`,
       cancel_url: `${process.env.URL}/`,
-      // Attach metadata to the Checkout Session itself
+      // Attach metadata to the Checkout Session itself (good for debugging)
       metadata: boxMeta,
-      // ALSO attach metadata to the Subscription object that will be created
+      // CRITICAL CHANGE: Attach metadata to the Subscription object
       subscription_data: {
         metadata: boxMeta,
       },
