@@ -5,7 +5,6 @@ exports.handler = async (event) => {
   try {
     const { lineItems, priceId, boxMeta } = JSON.parse(event.body);
 
-    // 1. Determine the items to be purchased
     let finalLineItems = lineItems;
     if (!finalLineItems && priceId) {
         finalLineItems = [{ price: priceId, quantity: 1 }];
@@ -18,16 +17,17 @@ exports.handler = async (event) => {
         };
     }
 
-    // 2. Create the Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: finalLineItems,
       mode: 'subscription',
       success_url: `${process.env.URL}/success.html`,
       cancel_url: `${process.env.URL}/`,
-      // Attach metadata to the Checkout Session itself (good for debugging)
+      // Enable native shipping address collection for US
+      shipping_address_collection: {
+        allowed_countries: ['US'],
+      },
       metadata: boxMeta,
-      // CRITICAL CHANGE: Attach metadata to the Subscription object
       subscription_data: {
         metadata: boxMeta,
       },
