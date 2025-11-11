@@ -2,7 +2,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin SDK
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -30,7 +29,6 @@ exports.handler = async (event) => {
     const session = stripeEvent.data.object;
     console.log(`Processing checkout session ${session.id}`);
 
-    // 1. Fetch full customer details to ensure we get name and email
     let customer = {};
     if (session.customer) {
         try {
@@ -40,7 +38,6 @@ exports.handler = async (event) => {
         }
     }
 
-    // 2. Merge metadata from session and subscription
     let finalMetadata = session.metadata || {};
     if (session.subscription) {
         try {
@@ -51,22 +48,29 @@ exports.handler = async (event) => {
         }
     }
 
-    // 3. Safely parse JSON fields from metadata
     let parsedCustomContents = {};
     try {
         parsedCustomContents = finalMetadata.customContents ? JSON.parse(finalMetadata.customContents) : {};
     } catch (e) { console.error("Error parsing customContents:", e); }
 
-    let parsedDeliveryAddress = {};
-    try {
-        parsedDeliveryAddress = finalMetadata.deliveryAddress ? JSON.parse(finalMetadata.deliveryAddress) : {};
-    } catch (e) { console.error("Error parsing deliveryAddress:", e); }
+    // --- NEW ADDRESS EXTRACTION LOGIC ---
+    // Prefer session shipping details, fall back to customer shipping if session is empty
+    const shipping = session.shipping_details || customer.shipping;
+    
+    const deliveryAddress = {
+        line1: shipping?.address?.line1 || null,
+        line2: shipping?.address?.line2 || null,
+        city: shipping?.address?.city || null,
+        state: shipping?.address?.state || null,
+        postal_code: shipping?.address?.postal_code || null,
+        country: shipping?.address?.country || null,
+        recipient_name: shipping?.name || null // Capture who it's shipped to
+    };
+    // ------------------------------------
 
-    // 4. Construct the final order object for Firebase
     const orderData = {
       stripeSessionId: session.id,
       stripeCustomerId: session.customer,
-      // Try getting email/name from multiple possible sources, preferring the most reliable first
       customerEmail: customer.email || session.customer_details?.email || session.customer_email,
       customerName: customer.name || session.customer_details?.name,
       amountTotal: session.amount_total / 100,
@@ -74,13 +78,14 @@ exports.handler = async (event) => {
       paymentStatus: session.payment_status,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       
-      // Custom Business Data
       boxType: finalMetadata.boxType || null,
       customContents: parsedCustomContents,
       deliveryDay: finalMetadata.deliveryDay || null,
       rotationFavorites: finalMetadata.rotationFavorites || null,
       wheatgrassQuantity: finalMetadata.wheatgrassQuantity ? parseInt(finalMetadata.wheatgrassQuantity) : 0,
-      deliveryAddress: parsedDeliveryAddress, // Use the parsed address object
+      
+      // Use the new natively extracted address
+      deliveryAddress: deliveryAddress, 
       
       subscriptionId: session.subscription || null,
     };
