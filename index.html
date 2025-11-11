@@ -567,10 +567,10 @@ const CROP_NAMES = ['Superfood Mix', 'Salad Mix', 'Spice It Up Mix', 'Sunflower'
 // IMPORTANT: These are placeholder IDs. Replace with your actual Stripe Price IDs.
 const PRICE_IDS = {
     // Weekly prices based on number of 4oz units
-    CUSTOM_2_UNITS_WEEKLY: 'price_1SG7FXQQDP18MPc4TZxJftwj', // For 8oz box
-    CUSTOM_3_UNITS_WEEKLY: 'price_1SG7FqQQDP18MPc4SuUQovuJ', // For 12oz box
-    CUSTOM_4_UNITS_WEEKLY: 'price_1SG7G6QQDP18MPc4BFRniSx0', // For 16oz box
-    WHEATGRASS_WEEKLY: 'price_1SNbz0QQDP18MPc4gukwIx0x', // <-- ADD THIS PLACEHOLDER
+    CUSTOM_2_UNITS_WEEKLY: 'price_1SSNGf3VuTpWf80PMxcJDHFC', // For 8oz box
+    CUSTOM_3_UNITS_WEEKLY: 'price_1SSNH03VuTpWf80P7bhnJgGK', // For 12oz box
+    CUSTOM_4_UNITS_WEEKLY: 'price_1SSNHP3VuTpWf80PxF0q0d5r', // For 16oz box
+    WHEATGRASS_WEEKLY: 'price_1SSNHi3VuTpWf80PBTyudCVa', // <-- ADD THIS PLACEHOLDER
 };
 
 // --- DOM Elements ---
@@ -963,7 +963,7 @@ async function handleProceedToStripe() {
             return;
         }
 
-        const stripe = Stripe('pk_test_51S3ncnQQDP18MPc4GR7ywjp4cUpLnGYxKJjbbtacE2BM8pTm4ce6uxnXVjFQrHkI572Cm3zoFQmvIPJbWW48kaGW00p3PJtsRW'); 
+        const stripe = Stripe('pk_live_51S3nce3VuTpWf80PSSyDbSEQt2kN71fCvvCmG7rY6lzVngIb619mqYWlnZIUHawdFKBAOrmaZxWuZw6bwoJLiLCh00BBrUIROE'); 
         const result = await stripe.redirectToCheckout({
             sessionId: session.sessionId
         });
