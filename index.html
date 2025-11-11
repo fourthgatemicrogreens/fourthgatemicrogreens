@@ -517,6 +517,19 @@ body {
             </div>
 
             <form id="details-form">
+                <!-- NEW: Delivery Address Fields -->
+                <div class="mb-6">
+                    <h4 class="font-semibold text-lg mb-3">Delivery Address</h4>
+                    <input type="text" id="address-line1" placeholder="Street Address" class="w-full p-3 mb-3 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
+                    <input type="text" id="address-line2" placeholder="Apartment, suite, etc. (optional)" class="w-full p-3 mb-3 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" id="address-city" placeholder="City" class="w-full p-3 mb-3 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
+                        <input type="text" id="address-zip" placeholder="ZIP Code" class="w-full p-3 mb-3 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
+                    </div>
+                </div>
+                <!-- END NEW -->
+
+                <h4 class="font-semibold text-lg mb-3">Contact Info</h4>
                 <input type="text" placeholder="Full Name" class="w-full p-3 mb-4 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
                 <input type="email" placeholder="Email Address" class="w-full p-3 mb-4 rounded-lg border-2 border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#3B7235]" required>
                 <button type="submit" class="w-full btn-primary">Proceed to Payment</button>
@@ -546,6 +559,12 @@ const state = {
     rotationFavorites: '', // To store customer rotation preferences
     totalPrice: 0,
     wheatgrassQuantity: 0,
+    deliveryAddress: { // NEW: To store address
+        line1: '',
+        line2: '',
+        city: '',
+        zip: ''
+    }
 };
 
 // For UI display and price calculation
@@ -607,6 +626,8 @@ function resetStateAndUI() {
     state.rotationFavorites = ''; // Reset rotation preferences
     state.totalPrice = 0;
     state.wheatgrassQuantity = 0;
+    // Reset address
+    state.deliveryAddress = { line1: '', line2: '', city: '', zip: '' };
     // Reset selection visuals
     document.querySelectorAll('#delivery-day-options .selected').forEach(el => el.classList.remove('selected'));
     document.getElementById('details-form').reset();
@@ -881,6 +902,15 @@ async function handleFormSubmit(event) {
     submitButton.disabled = true;
     submitButton.textContent = 'Processing...';
 
+    // Capture address from form
+    state.deliveryAddress = {
+        line1: document.getElementById('address-line1').value,
+        line2: document.getElementById('address-line2').value,
+        city: document.getElementById('address-city').value,
+        zip: document.getElementById('address-zip').value,
+        country: 'US' // Defaulting to US based on your location
+    };
+
     // --- Build payload for backend ---
     const totalUnits = Object.values(state.customBox).reduce((sum, qty) => sum + qty, 0);
     const lineItems = [];
@@ -935,6 +965,7 @@ async function handleFormSubmit(event) {
         rotationFavorites: state.rotationFavorites, // Send preferences to backend
         customContents: JSON.stringify(state.customBox),
         wheatgrassQuantity: state.wheatgrassQuantity,
+        deliveryAddress: JSON.stringify(state.deliveryAddress) // NEW: Send address as JSON string
     };
 
     try {
