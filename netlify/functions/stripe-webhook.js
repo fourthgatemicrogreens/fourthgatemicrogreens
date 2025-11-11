@@ -56,6 +56,16 @@ exports.handler = async (event) => {
         }
     }
 
+    // Parse the new delivery address from metadata
+    let deliveryAddress = {};
+    if (finalMetadata.deliveryAddress) {
+        try {
+            deliveryAddress = JSON.parse(finalMetadata.deliveryAddress);
+        } catch (e) {
+            console.error("Error parsing deliveryAddress JSON:", e);
+        }
+    }
+
     const orderData = {
       stripeSessionId: session.id,
       stripeCustomerId: session.customer,
@@ -72,6 +82,7 @@ exports.handler = async (event) => {
       deliveryDay: finalMetadata.deliveryDay || null,
       rotationFavorites: finalMetadata.rotationFavorites || null,
       wheatgrassQuantity: finalMetadata.wheatgrassQuantity ? parseInt(finalMetadata.wheatgrassQuantity) : 0,
+      deliveryAddress: deliveryAddress, // Save the new address object
       
       subscriptionId: session.subscription || null,
     };
@@ -87,3 +98,5 @@ exports.handler = async (event) => {
 
   return { statusCode: 200, body: JSON.stringify({ received: true }) };
 };
+
+Once you've updated both the frontend (`index-31.html`) and the backend (`stripe-webhook.js`), your new orders will include the full delivery address in Firebase!
