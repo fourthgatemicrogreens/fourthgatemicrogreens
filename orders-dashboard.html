@@ -212,9 +212,9 @@
 
     /**
      * Handles the button click to send an email.
-     * Opens the user's default email client.
+     * Opens the user's default email client and copies HTML body to clipboard.
      */
-    window.handleSendEmail = function(orderId, templateType) {
+    window.handleSendEmail = async function(orderId, templateType) {
         const order = window.allOrders[orderId];
         if (!order) {
             console.error("Order data not found for ID:", orderId);
@@ -225,33 +225,81 @@
         if (!emailTo) {
             console.error("No customer email found for this order.");
             // You could show a small error message on the UI here
+            const errorEl = document.createElement('div');
+            errorEl.textContent = "Error: No customer email found for this order.";
+            errorEl.className = "bg-red-100 text-red-700 p-3 rounded-lg fixed top-5 right-5 shadow-lg";
+            document.body.appendChild(errorEl);
+            setTimeout(() => errorEl.remove(), 3000);
             return;
         }
 
         try {
             const { subject, body } = getEmailTemplate(order, templateType);
             
-            // We must encode the components for the mailto link
+            // 1. Encode the subject for the mailto link
             const encodedSubject = encodeURIComponent(subject);
-            const encodedBody = encodeURIComponent(body);
             
-            const mailtoLink = `mailto:${emailTo}?subject=${encodedSubject}&body=${encodedBody}`;
+            // 2. Create the mailto link with *only* the subject
+            const mailtoLink = `mailto:${emailTo}?subject=${encodedSubject}`;
             
-            // Check if link is too long (browsers have limits, ~2000-8000 chars)
-            if (mailtoLink.length > 2000) {
-                 console.warn("Mailto link is very long and might fail in some browsers.");
-                 // As a fallback, just open with subject, and log body to console
-                 const fallbackLink = `mailto:${emailTo}?subject=${encodedSubject}`;
-                 console.log("Email body was too long. Please copy/paste the following HTML into your email client:");
-                 console.log(body);
-                 window.open(fallbackLink, '_blank');
-            } else {
-                 // Use window.open for better compatibility than window.location.href
-                 window.open(mailtoLink, '_blank');
+            // 3. Copy the HTML body to the clipboard
+            let copySuccess = false;
+            try {
+                // Fallback: execCommand (synchronous, more likely to work in iframes)
+                // We need a temporary element to copy from
+                const tempEl = document.createElement('div');
+                tempEl.contentEditable = true; // Must be editable
+                tempEl.innerHTML = body;
+                tempEl.style.position = 'absolute';
+                tempEl.style.left = '-9999px'; // Hide it
+                document.body.appendChild(tempEl);
+
+                const range = document.createRange();
+                range.selectNodeContents(tempEl);
+                
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                try {
+                    copySuccess = document.execCommand('copy');
+                } catch (e) {
+                    console.error('execCommand copy failed:', e);
+                }
+                
+                document.body.removeChild(tempEl);
+            } catch (err) {
+                 console.error('Clipboard copy failed:', err);
             }
+
+            // 4. Open the email client
+            window.open(mailtoLink, '_blank');
+
+            // 5. Show a notification
+            const message = copySuccess 
+                ? "Email draft opened. The HTML body has been copied to your clipboard. Please paste it into the email."
+                : "Email draft opened. Could not copy body to clipboard. Please copy manually from the console.";
+            
+            if (!copySuccess) {
+                console.log("--- START OF EMAIL BODY TO COPY ---");
+                console.log(body);
+                console.log("--- END OF EMAIL BODY TO COPY ---");
+            }
+            
+            const notifyEl = document.createElement('div');
+            notifyEl.textContent = message;
+            notifyEl.className = (copySuccess ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700') + 
+                                " p-4 rounded-lg fixed top-5 right-5 shadow-lg max-w-sm z-50";
+            document.body.appendChild(notifyEl);
+            setTimeout(() => notifyEl.remove(), 7000); // Give user time to read it
 
         } catch (err) {
             console.error("Failed to generate email template:", err);
+            const errorEl = document.createElement('div');
+            errorEl.textContent = "Error: " + err.message;
+            errorEl.className = "bg-red-100 text-red-700 p-3 rounded-lg fixed top-5 right-5 shadow-lg";
+            document.body.appendChild(errorEl);
+            setTimeout(() => errorEl.remove(), 3000);
         }
     }
 
