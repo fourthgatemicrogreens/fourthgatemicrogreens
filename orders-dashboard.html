@@ -1,374 +1,268 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fourth Gate Orders Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module">
-    // Import Firebase SDK (v9 modular)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fourth Gate Orders Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    // Import Firebase SDK (v9 modular)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    // Firebase Config
-   const firebaseConfig = {
-        apiKey: "AIzaSyDcwybZJui1WKAujPclyPgBaj_bE7IK-tg",
-        authDomain: "fourth-gate-microgreens.firebaseapp.com",
-        projectId: "fourth-gate-microgreens",
-        storageBucket: "fourth-gate-microgreens.firebasestorage.app",
-        messagingSenderId: "601340343009",
-        appId: "1:601340343009:web:3ba10d82fca3252b3b3da0",
-        measurementId: "G-GM9VW1NRV9"
-    };
+    // Firebase Config
+   const firebaseConfig = {
+        apiKey: "AIzaSyDcwybZJui1WKAujPclyPgBaj_bE7IK-tg",
+        authDomain: "fourth-gate-microgreens.firebaseapp.com",
+        projectId: "fourth-gate-microgreens",
+        storageBucket: "fourth-gate-microgreens.firebasestorage.app",
+        messagingSenderId: "601340343009",
+        appId: "1:601340343009:web:3ba10d82fca3252b3b3da0",
+        measurementId: "G-GM9VW1NRV9"
+    };
 
-    // Init
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    // Init
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    // DOM elements
-    const loginForm = document.getElementById("login-form");
-    const logoutBtn = document.getElementById("logout-btn");
-    const ordersDiv = document.getElementById("orders");
-    const authSection = document.getElementById("auth-section");
-    const dashboardSection = document.getElementById("dashboard");
+    // DOM elements
+    const loginForm = document.getElementById("login-form");
+    const logoutBtn = document.getElementById("logout-btn");
+    const ordersDiv = document.getElementById("orders");
+    const authSection = document.getElementById("auth-section");
+    const dashboardSection = document.getElementById("dashboard");
 
-    // Login
-    if (loginForm) {
-        loginForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (err) {
-                alert("Login failed: " + err.message);
-            }
-        });
-    }
+    // Login
+    if (loginForm) {
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (err) {
+                alert("Login failed: " + err.message);
+            }
+        });
+    }
 
-    // Logout
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => signOut(auth));
-    }
+    // Logout
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => signOut(auth));
+    }
 
-    // Listen to auth state
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        authSection.classList.add("hidden");
-        dashboardSection.classList.remove("hidden");
-        loadOrders();
-      } else {
-        authSection.classList.remove("hidden");
-        dashboardSection.classList.add("hidden");
-      }
-    });
+    // Listen to auth state
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        authSection.classList.add("hidden");
+        dashboardSection.classList.remove("hidden");
+        loadOrders();
+      } else {
+        authSection.classList.remove("hidden");
+        dashboardSection.classList.add("hidden");
+      }
+    });
 
-    // --- Event Delegation for Dynamic Buttons ---
-    if (ordersDiv) {
-        ordersDiv.addEventListener('click', (e) => {
-            const reminderBtn = e.target.closest('.send-reminder-btn');
-            const deliveredBtn = e.target.closest('.send-delivered-btn');
+    // Helper to format timestamp
+    function formatDate(timestamp) {
+        if (!timestamp) return 'N/A';
+        // Handle Firestore Timestamp or standard Date object
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toLocaleString('en-US', { 
+            dateStyle: 'medium', 
+            timeStyle: 'short' 
+        });
+    }
 
-            if (reminderBtn) {
-                handleEmailClick(reminderBtn.dataset, getReminderEmailTemplate);
-            }
+    // Helper to format custom contents
+    function formatContents(customContents, wheatgrassQty) {
+        let html = '<ul class="list-disc list-inside ml-2 text-gray-800">';
+        let hasItems = false;
+        if (customContents && Object.keys(customContents).length > 0) {
+            for (const [crop, qty] of Object.entries(customContents)) {
+                html += `<li><span class="font-medium">${crop}:</span> ${qty * 4}oz</li>`;
+                hasItems = true;
+            }
+        }
+        // Ensure wheatgrassQty is treated as a number
+        const wgQtyNum = Number(wheatgrassQty) || 0;
+        if (wgQtyNum > 0) {
+             html += `<li><span class="font-medium">Wheatgrass (5x5 tray):</span> Qty ${wgQtyNum}</li>`;
+             hasItems = true;
+        }
+        
+        if (!hasItems) {
+            html += '<li class="text-gray-500 italic">No specific items listed</li>';
+        }
+        html += '</ul>';
+        return html;
+    }
 
-            if (deliveredBtn) {
-                handleEmailClick(deliveredBtn.dataset, getDeliveredEmailTemplate);
-            }
-        });
-    }
+    // Load orders in realtime
+    function loadOrders() {
+      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+      onSnapshot(q, (snapshot) => {
+        ordersDiv.innerHTML = "";
+        if (snapshot.empty) {
+            ordersDiv.innerHTML = '<div class="text-center py-12 bg-white rounded-xl shadow-sm"><p class="text-gray-500">No orders found yet.</p></div>';
+            return;
+        }
 
-    function handleEmailClick(dataset, templateFn) {
-        const { email, name } = dataset;
-        if (!email) {
-            console.error("No email address found for this customer.");
-            // We can't use alert, so just log to console.
-            return;
-        }
+        snapshot.forEach((doc) => {
+          const order = doc.data();
+          const addr = order.deliveryAddress || {};
+          const currency = (order.currency || 'usd').toUpperCase();
 
-        const { subject, body } = templateFn(name);
+          ordersDiv.innerHTML += `
+            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-6 shadow-sm hover:shadow-md transition-all">
+              <!-- Header -->
+              <div class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-100">
+                  <div class="mb-2 md:mb-0">
+                      <h3 class="text-lg font-bold text-[#2D4026] flex items-center gap-2">
+                          ${order.customerName || 'Unknown Customer'}
+                          <span class="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-1 rounded-full">${order.boxType || 'N/A'} Box</span>
+                      </h3>
+                      <a href="mailto:${order.customerEmail}" class="text-sm text-green-600 hover:underline">${order.customerEmail || 'No email'}</a>
+                  </div>
+                  <div class="text-left md:text-right">
+                       <div class="flex items-center gap-2 md:justify-end">
+                           <span class="font-bold text-xl text-[#2D4026]">$${order.amountTotal ? Number(order.amountTotal).toFixed(2) : '0.00'} <span class="text-xs text-gray-400">${currency}</span></span>
+                           <span class="px-3 py-1 ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'} rounded-full text-xs font-bold uppercase tracking-wider">
+                              ${order.paymentStatus || 'unknown'}
+                           </span>
+                       </div>
+                       <p class="text-xs text-gray-500 mt-1">Ordered: ${formatDate(order.createdAt)}</p>
+                  </div>
+              </div>
 
-        const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+              <!-- Body -->
+              <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <!-- Col 1: Order Contents -->
+                  <div class="md:col-span-1">
+                      <h4 class="font-bold text-gray-700 mb-3 flex items-center uppercase text-xs tracking-wider">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          Contents
+                      </h4>
+                      <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+                        ${formatContents(order.customContents, order.wheatgrassQuantity)}
+                      </div>
+                       ${order.rotationFavorites ? `
+                        <div class="mt-3">
+                            <h5 class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">🔄 Rotation Preferences</h5>
+                            <p class="text-sm bg-blue-50 text-blue-900 p-3 rounded-lg border border-blue-100 italic">
+                                "${order.rotationFavorites}"
+                            </p>
+                        </div>
+                       ` : ''}
+                  </div>
 
-        // Open the user's default email client
-        window.location.href = mailtoLink;
-    }
+                  <!-- Col 2: Delivery Info -->
+                  <div class="md:col-span-1">
+                      <h4 class="font-bold text-gray-700 mb-3 flex items-center uppercase text-xs tracking-wider">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 00-1-1H9m9 9h1a1 1 0 001-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 001 1h1m9-9h-1a1 1 0 00-1 1v3a1 1 0 01-1 1h-1a1 1 0 01-1-1V6a1 1 0 00-1-1H4a1 1 0 00-1 1v3" />
+                          </svg>
+                          Delivery
+                      </h4>
+                      <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 h-full">
+                          <p class="mb-2">
+                              <span class="text-xs font-bold text-gray-500 uppercase">Preferred Day</span><br>
+                              <span class="font-medium text-gray-900">${order.deliveryDay || 'Not specified'}</span>
+                          </p>
+                          <div class="mt-4">
+                              <span class="text-xs font-bold text-gray-500 uppercase">Shipping Address</span>
+                              <address class="not-italic text-sm text-gray-700 mt-1">
+                                  <span class="font-semibold">${addr.recipient_name || order.customerName || ''}</span><br>
+                                  ${addr.line1 || ''}<br>
+                                  ${addr.line2 ? addr.line2 + '<br>' : ''}
+                                  ${addr.city || ''}, ${addr.state || ''} ${addr.postal_code || ''}<br>
+                                  ${addr.country || ''}
+                              </address>
+                          </div>
+                      </div>
+                  </div>
 
-    // Helper to format timestamp
-    function formatDate(timestamp) {
-        if (!timestamp) return 'N/A';
-        // Handle Firestore Timestamp or standard Date object
-        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-        return date.toLocaleString('en-US', { 
-            dateStyle: 'medium', 
-            timeStyle: 'short' 
-        });
-    }
-
-    // --- EMAIL TEMPLATE HELPERS ---
-    // TODO: Customize these templates with your email content.
-    // NOTE: The body must be plain text. HTML is not reliably supported in mailto: links.
-    // Use \n for new lines.
-
-    function getReminderEmailTemplate(customerName) {
-        const subject = "Reminder: Your Fourth Gate Microgreens Order";
-        const body = `Hi ${customerName},
-
-This is a friendly reminder about your upcoming microgreens order.
-
-We'll be delivering your fresh greens soon!
-
-Best,
-The Fourth Gate Team`;
-        return { subject, body };
-    }
-
-    function getDeliveredEmailTemplate(customerName) {
-        const subject = "Your Fourth Gate Microgreens Order Has Been Delivered!";
-        const body = `Hi ${customerName},
-
-Great news! Your latest order of fresh microgreens has been delivered.
-
-Please retrieve it at your earliest convenience to ensure maximum freshness.
-
-We hope you enjoy!
-
-Best,
-The Fourth Gate Team`;
-        return { subject, body };
-    }
-    // --- END EMAIL TEMPLATE HELPERS ---
-
-    // Helper to format custom contents
-    function formatContents(customContents, wheatgrassQty) {
-        let html = '<ul class="list-disc list-inside ml-2 text-gray-800">';
-        let hasItems = false;
-        if (customContents && Object.keys(customContents).length > 0) {
-            for (const [crop, qty] of Object.entries(customContents)) {
-    _message = "Fixing bug where wheatgrass quantities were being concatenated as strings instead of added as numbers."
-                html += `<li><span class="font-medium">${crop}:</span> ${qty * 4}oz</li>`;
-                hasItems = true;
-            }
-        }
-        // Ensure wheatgrassQty is treated as a number
-        const wgQtyNum = Number(wheatgrassQty) || 0;
-        if (wgQtyNum > 0) {
-             html += `<li><span class="font-medium">Wheatgrass (5x5 tray):</span> Qty ${wgQtyNum}</li>`;
-             hasItems = true;
-        }
-        
-        if (!hasItems) {
-            html += '<li class="text-gray-500 italic">No specific items listed</li>';
-        }
-        html += '</ul>';
-        return html;
-    }
-
-    // Load orders in realtime
-    function loadOrders() {
-      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-      onSnapshot(q, (snapshot) => {
-        ordersDiv.innerHTML = "";
-        if (snapshot.empty) {
-            ordersDiv.innerHTML = '<div class="text-center py-12 bg-white rounded-xl shadow-sm"><p class="text-gray-500">No orders found yet.</p></div>';
-            return;
-        }
-
-        snapshot.forEach((doc) => {
-          const order = doc.data();
-          const addr = order.deliveryAddress || {};
-          const currency = (order.currency || 'usd').toUpperCase();
-
-          ordersDiv.innerHTML += `
-            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-6 shadow-sm hover:shadow-md transition-all">
-              <!-- Header -->
-              <div class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-100">
-                  <div class="mb-2 md:mb-0">
-                      <h3 class="text-lg font-bold text-[#2D4026] flex items-center gap-2">
-        _message = "Refining UI: Making customer name bold and larger, while de-emphasizing the 'Box Type' tag for better visual hierarchy."
-                          ${order.customerName || 'Unknown Customer'}
-                          <span class="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-1 rounded-full">${order.boxType || 'N/A'} Box</span>
-                      </h3>
-                      <!-- <a href="mailto:${order.customerEmail}" class="text-sm text-green-600 hover:underline">${order.customerEmail || 'No email'}</a> -->
-                      <div class="flex items-center gap-3 mt-1">
-                          <span class="text-sm text-gray-600">${order.customerEmail || 'No email'}</span>
-                          <button title="Send Reminder Email" class="send-reminder-btn text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-md hover:bg-blue-200 transition-colors"
-                                  data-email="${order.customerEmail || ''}"
-            _message = "Refining UI: Making customer name bold and larger, while de-emphasizing the 'Box Type' tag for better visual hierarchy."
-                                  data-name="${order.customerName || 'Valued Customer'}">
-                              Reminder
-                          </button>
-                          <button title="Send Order Delivered Email" class="send-delivered-btn text-xs bg-green-100 text-green-800 px-2 py-1 rounded-md hover:bg-green-200 transition-colors"
-s
-                                  data-email="${order.customerEmail || ''}"
-                                  data-name="${order.customerName || 'Valued Customer'}">
-                              Delivered
-                          </button>
-                    _message = "Ensuring consistent alignment and spacing in the order card header."
-                      </div>
-  Data
-                  </div>
-                  <div class="text-left md:text-right">
-Start
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                          </svg>
-                          Contents
-                      </h4>
-                *
-                      <div class="bg-green-50 p-4 rounded-lg border border-green-100">
-                        ${formatContents(order.customContents, order.wheatgrassQuantity)}
-                    tents
-                      </div>
-                       ${order.rotationFavorites ? `
-                        <div class="mt-3">
-                            <h5 class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">🔄 Rotation Preferences</h5>
-to-one mapping
-                            <p class="text-sm bg-blue-50 text-blue-900 p-3 rounded-lg border border-blue-100 italic">
-line-height: 1.5;
-                              "Replace with `order.rotationFavorites`"
-css
-                            </p>
-                        </div>
-                       ` : ''}
-s
-                  </div>
-
-                  <!-- Col 2: Delivery Info -->
-style="flex-basis: 33.33%;"
-                  <div class="md:col-span-1">
-                      <h4 class="font-bold text-gray-700 mb-3 flex items-center uppercase text-xs tracking-wider">
-s
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 00-1-1H9m9 9h1a1 1 0 001-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 001 1h1m9-9h-1a1 1 0 00-1 1v3a1 1 0 01-1 1h-1a1 1 0 01-1-1V6a1 1 0 00-1-1H4a1 1 0 00-1 1v3" />
-s
-              _message = "Adding descriptive titles and icons to each section (Contents, Delivery, System IDs) for better scannability."
-                          </svg>
-                          Delivery
-                      </h4>
-                      <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 h-full">
-                          <p class="mb-2">
-                Click to copy
-                              <span class="text-xs font-bold text-gray-500 uppercase">Preferred Day</span><br>
-                              <span class="font-medium text-gray-900">${order.deliveryDay || 'Not specified'}</span>
-s
-                          </p>
-                          <div class="mt-4">
-                              <span class="text-xs font-bold text-gray-500 uppercase">Shipping Address</span>
-                              <address class="not-italic text-sm text-gray-700 mt-1">
-Entry point
-                                  <span class="font-semibold">${addr.recipient_name || order.customerName || ''}</span><br>
-s
-                                  ${addr.line1 || ''}<br>
-      S
-                                ${addr.line2 ? addr.line2 + '<br>' : ''}
-Main
-                                  ${addr.city || ''}, ${addr.state || ''} ${addr.postal_code || ''}<br>
-S
-s
-                                  ${addr.country || ''}
-                            s
-  t-family: 'Roboto', sans-serif;
-                          </address>
-                          </div>
-                      </div>
-                  </div>
-
-                  <!-- Col 3: Stripe/Tech Details -->
-                id
-                       <h4 class="font-bold text-gray-700 mb-3 flex items-center uppercase text-xs tracking-wider">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          s
-                          </svg>
-                          System IDs
-                Body
-                      </h4>
-                Example
-                      <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 text-xs font-mono text-gray-600 space-y-2 overflow-hidden">
-                          <div>
-                              <span class="font-bold text-gray-400 block">Firebase Order ID</span>
-                              <span class="break-all select-all">${doc.id}</span>
-                          </div>
-                          <div>
-                              <span class="font-bold text-gray-400 block">Stripe Session ID</span>
-                              <span class="break-all select-all">${order.stripeSessionId || 'N/A'}</span>
-s
-                          </div>
-                          <div>
-                              <span class="font-bold text-gray-400 block">Stripe Customer ID</span>
-s
-                              <span class="break-all select-all">${order.stripeCustomerId || 'N/A'}</span>
-                          </div>
-                s
-                           <div>
-                              <span class="font-bold text-gray-400 block">Stripe Subscription ID</span>
-We
-                              <span class="break-all select-all">${order.subscriptionId || 'N/A'}</span>
-                          </div>
-                D
-                      </div>
-                  </div>
-              </div>
-            </div>
-          `;
-        });
-      });
-    }
-  </script>
+                  <!-- Col 3: Stripe/Tech Details -->
+                  <div class="md:col-span-1">
+                       <h4 class="font-bold text-gray-700 mb-3 flex items-center uppercase text-xs tracking-wider">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          System IDs
+                      </h4>
+                      <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 text-xs font-mono text-gray-600 space-y-2 overflow-hidden">
+                          <div>
+                              <span class="font-bold text-gray-400 block">Firebase Order ID</span>
+                              <span class="break-all select-all">${doc.id}</span>
+                          </div>
+                          <div>
+                              <span class="font-bold text-gray-400 block">Stripe Session ID</span>
+                              <span class="break-all select-all">${order.stripeSessionId || 'N/A'}</span>
+                          </div>
+                          <div>
+                              <span class="font-bold text-gray-400 block">Stripe Customer ID</span>
+                              <span class="break-all select-all">${order.stripeCustomerId || 'N/A'}</span>
+                          </div>
+                           <div>
+                              <span class="font-bold text-gray-400 block">Stripe Subscription ID</span>
+                              <span class="break-all select-all">${order.subscriptionId || 'N/A'}</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+            </div>
+          `;
+        });
+      });
+    }
+  </script>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen p-6">
-Body
-  <div class="max-w-6xl mx-auto">
-      <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold text-[#2D4026] flex items-center gap-3">
-            🌱 Fourth Gate <span class="text-gray-500 font-light">Orders Dashboard</span>
-        </h1>
-        <button id="logout-btn" class="hidden bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-6 rounded-lg transition shadow-sm border border-gray-200">
-Click to copy
-            Logout
-        </button>
-    _message = "Adding a 'Logout' button that only appears when the user is authenticated."
-      </div>
+  <div class="max-w-6xl mx-auto">
+      <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-[#2D4026] flex items-center gap-3">
+            🌱 Fourth Gate <span class="text-gray-500 font-light">Orders Dashboard</span>
+        </h1>
+        <button id="logout-btn" class="hidden bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-6 rounded-lg transition shadow-sm border border-gray-200">
+            Logout
+        </button>
+      </div>
 
-      <!-- Login Section -->
-      <div id="auth-section" class="max-w-md mx-auto bg-white p-10 rounded-2xl shadow-xl mt-20">
-        <div class="text-center mb-8">
-             <h2 class="text-2xl font-bold text-[#2D4026]">Admin Login</h2>
-             <p class="text-gray-500">Please sign in to view orders</p>
-        </div>
-        <form id="login-form" class="space-y-5">
-          <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Email</label>
-Read
-              <input type="email" id="email" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B7235] focus:border-[#3B7235] transition outline-none" placeholder="admin@fourthgate.com" />
-s
-          </div>
-          <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Password</label>
-              <input type="password" id="password" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B7235] focus:border-[#3B7235] transition outline-none" placeholder="••••••••" />
-Sort
-          </div>
-          <button type="submit" class="w-full bg-[#3B7235] hover:bg-[#2D5829] text-white font-bold py-4 px-4 rounded-xl transition duration-200 ease-in-out transform hover:scale-[1.02]">
-Body
-              Sign In
-          </button>
-        </form>
-      </div>
+      <!-- Login Section -->
+      <div id="auth-section" class="max-w-md mx-auto bg-white p-10 rounded-2xl shadow-xl mt-20">
+        <div class="text-center mb-8">
+             <h2 class="text-2xl font-bold text-[#2D4026]">Admin Login</h2>
+             <p class="text-gray-500">Please sign in to view orders</p>
+        </div>
+        <form id="login-form" class="space-y-5">
+          <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2">Email</label>
+              <input type="email" id="email" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B7235] focus:border-[#3B7235] transition outline-none" placeholder="admin@fourthgate.com" />
+          </div>
+          <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2">Password</label>
+              <input type="password" id="password" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B7235] focus:border-[#3B7235] transition outline-none" placeholder="••••••••" />
+          </div>
+          <button type="submit" class="w-full bg-[#3B7235] hover:bg-[#2D5829] text-white font-bold py-4 px-4 rounded-xl transition duration-200 ease-in-out transform hover:scale-[1.02]">
+              Sign In
+          </button>
+        </form>
+      </div>
 
-      <!-- Dashboard Section -->
-      <div id="dashboard" class="hidden">
-        <div id="orders">
-            <!-- Loading state -->
-            <div class="flex flex-col items-center justify-center py-20">
-Color
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B7235] mb-4"></div>
-                <p class="text-gray-500">Loading orders...</p>
-            </div>
-        </div>
-      </div>
-  </div>
+      <!-- Dashboard Section -->
+      <div id="dashboard" class="hidden">
+        <div id="orders">
+            <!-- Loading state -->
+            <div class="flex flex-col items-center justify-center py-20">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B7235] mb-4"></div>
+                <p class="text-gray-500">Loading orders...</p>
+            </div>
+        </div>
+      </div>
+  </div>
 </body>
 </html>
