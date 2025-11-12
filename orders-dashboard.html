@@ -13,7 +13,7 @@
 
     // Firebase Config
    const firebaseConfig = {
-        apiKey: "AIzaSyDcwybZJui1WKAujPclyPgBaj_bE7IK-tg", // <-- PASTE YOUR API KEY HERE
+        apiKey: "[YOUR_API_KEY]", // <-- PASTE YOUR API KEY HERE
         authDomain: "fourth-gate-microgreens.firebaseapp.com",
         projectId: "fourth-gate-microgreens",
         storageBucket: "fourth-gate-microgreens.firebasestorage.app",
@@ -203,6 +203,27 @@
                     </div>
 
                     <p style="margin-top: 20px; margin-bottom: 20px;">Please remember to leave out your cooler bag if you have one. We look forward to delivering to you!</p>
+                ${emailHtmlEnd}
+            `;
+        } else if (templateType === 'completed') {
+            subject = `Your Fourth Gate Microgreens have been delivered!`;
+            body = `
+                ${emailHtmlStart}
+                <div class="header" style="background-color: #f4f4f4; padding: 20px; text-align: center; border-bottom: 1px solid #ddd;">
+                    <h1 style="color: #2D4026; margin: 0; font-size: 24px;">Your Greens Have Arrived!</h1>
+                </div>
+                <div class="content" style="padding: 30px;">
+                    <p style="margin-bottom: 20px;">Hi ${customerName},</p>
+                    <p style="margin-bottom: 20px;">Good news! Your fresh microgreens order has just been delivered.</p>
+                    
+                    <div class="order-details" style="background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
+                        <h3 style="color: #2D4026; margin-top: 0;">Order Delivered:</h3>
+                        <p style="margin-bottom: 10px;"><strong>Box Type:</strong> ${boxType}</p>
+                        <p style="margin-bottom: 10px;"><strong>Contents:</strong></p>
+                        ${orderDetailsHtml}
+                    </div>
+
+                    <p style="margin-top: 20px; margin-bottom: 20px;">We hope you enjoy your fresh, locally grown greens!</p>
                 ${emailHtmlEnd}
             `;
         }
@@ -446,6 +467,14 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                           Send Delivery Reminder
+                      </button>
+                      <button 
+                          onclick="handleSendEmail('${doc.id}', 'completed')"
+                          class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Send Delivery Completed
                       </button>
                   </div>
               </div>
