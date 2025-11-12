@@ -13,7 +13,7 @@
 
     // Firebase Config
    const firebaseConfig = {
-        apiKey: "AIzaSyDcwybZJui1WKAujPclyPgBaj_bE7IK-tg",
+        apiKey: "[YOUR_API_KEY]", // <-- PASTE YOUR API KEY HERE
         authDomain: "fourth-gate-microgreens.firebaseapp.com",
         projectId: "fourth-gate-microgreens",
         storageBucket: "fourth-gate-microgreens.firebasestorage.app",
@@ -34,6 +34,9 @@
     const authSection = document.getElementById("auth-section");
     const dashboardSection = document.getElementById("dashboard");
 
+    // Global store for order data, accessible by onclick handlers
+    window.allOrders = {};
+
     // Login
     if (loginForm) {
         loginForm.addEventListener("submit", async (e) => {
@@ -43,7 +46,13 @@
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (err) {
-                alert("Login failed: " + err.message);
+                // Use a simple non-blocking notification instead of alert()
+                console.error("Login failed: " + err.message);
+                const errorEl = document.createElement('div');
+                errorEl.textContent = "Login failed: " + err.message;
+                errorEl.className = "bg-red-100 text-red-700 p-3 rounded-lg fixed top-5 right-5 shadow-lg";
+                document.body.appendChild(errorEl);
+                setTimeout(() => errorEl.remove(), 3000);
             }
         });
     }
@@ -77,28 +86,175 @@
     }
 
     // Helper to format custom contents
+    // Moved outside loadOrders and attached to window to be accessible by email template generator
     function formatContents(customContents, wheatgrassQty) {
-        let html = '<ul class="list-disc list-inside ml-2 text-gray-800">';
+        let html = '<ul class="list-disc list-inside ml-2 text-gray-800" style="list-style-type: disc; margin-left: 20px; padding-left: 0;">';
         let hasItems = false;
         if (customContents && Object.keys(customContents).length > 0) {
             for (const [crop, qty] of Object.entries(customContents)) {
-                html += `<li><span class="font-medium">${crop}:</span> ${qty * 4}oz</li>`;
+                html += `<li><strong style="font-weight: bold;">${crop}:</strong> ${qty * 4}oz</li>`;
                 hasItems = true;
             }
         }
         // Ensure wheatgrassQty is treated as a number
         const wgQtyNum = Number(wheatgrassQty) || 0;
         if (wgQtyNum > 0) {
-             html += `<li><span class="font-medium">Wheatgrass (5x5 tray):</span> Qty ${wgQtyNum}</li>`;
+             html += `<li><strong style="font-weight: bold;">Wheatgrass (5x5 tray):</strong> Qty ${wgQtyNum}</li>`;
              hasItems = true;
         }
         
         if (!hasItems) {
-            html += '<li class="text-gray-500 italic">No specific items listed</li>';
+            html += '<li style="color: #6b7280; font-style: italic;">No specific items listed</li>';
         }
         html += '</ul>';
         return html;
     }
+    window.formatContents = formatContents;
+
+
+    /**
+     * Generates the subject and HTML body for an email template.
+     */
+    function getEmailTemplate(order, templateType) {
+        const customerName = order.customerName || 'Valued Customer';
+        // Use the globally available formatContents function
+        const orderDetailsHtml = window.formatContents(order.customContents, order.wheatgrassQuantity);
+        const deliveryDay = order.deliveryDay || 'your upcoming delivery';
+        const total = order.amountTotal ? Number(order.amountTotal).toFixed(2) : 'N/A';
+        const boxType = order.boxType || 'Your Order';
+
+        let subject = '';
+        let body = '';
+
+        // Inline CSS for maximum email client compatibility
+        const styles = `
+            <style>
+                .container { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+                .header { background-color: #f4f4f4; padding: 20px; text-align: center; border-bottom: 1px solid #ddd; }
+                .header h1 { color: #2D4026; margin: 0; font-size: 24px; }
+                .content { padding: 30px; }
+                .content p { margin-bottom: 20px; }
+                .order-details { background-color: #f9f9f9; padding: 20px; border-radius: 5px; }
+                .order-details h3 { color: #2D4026; margin-top: 0; }
+                .footer { background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #777; }
+            </style>
+        `;
+
+        const emailHtmlStart = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                ${styles}
+            </head>
+            <body>
+                <div class="container" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+        `;
+
+        const emailHtmlEnd = `
+                    <p style="margin-bottom: 20px;">Thank you for supporting our farm!</p>
+                    <p style="margin-bottom: 20px;">Best,<br>The Fourth Gate Microgreens Team</p>
+                </div>
+                <div class="footer" style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #777;">
+                    <p>Fourth Gate Microgreens</p>
+                </div>
+            </div>
+            </body>
+            </html>
+        `;
+
+        if (templateType === 'confirmation') {
+            subject = `Your Order Confirmation from Fourth Gate Microgreens (${boxType})`;
+            body = `
+                ${emailHtmlStart}
+                <div class="header" style="background-color: #f4f4f4; padding: 20px; text-align: center; border-bottom: 1px solid #ddd;">
+                    <h1 style="color: #2D4026; margin: 0; font-size: 24px;">Order Confirmed!</h1>
+                </div>
+                <div class="content" style="padding: 30px;">
+                    <p style="margin-bottom: 20px;">Hi ${customerName},</p>
+                    <p style="margin-bottom: 20px;">Thank you for your order! We've successfully received it and are preparing your fresh microgreens. Here's a summary of your order:</p>
+                    
+                    <div class="order-details" style="background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
+                        <h3 style="color: #2D4026; margin-top: 0;">Order Summary</h3>
+                        <p style="margin-bottom: 10px;"><strong>Box Type:</strong> ${boxType}</p>
+                        <p style="margin-bottom: 10px;"><strong>Total:</strong> $${total}</p>
+                        <p style="margin-bottom: 10px;"><strong>Contents:</strong></p>
+                        ${orderDetailsHtml}
+                    </div>
+
+                    <p style="margin-top: 20px; margin-bottom: 20px;">We'll notify you when your order is out for delivery on ${deliveryDay}.</p>
+                ${emailHtmlEnd}
+            `;
+        } else if (templateType === 'reminder') {
+            subject = `Delivery Reminder: Your Fourth Gate Microgreens are coming tomorrow!`;
+            body = `
+                ${emailHtmlStart}
+                <div class="header" style="background-color: #f4f4f4; padding: 20px; text-align: center; border-bottom: 1px solid #ddd;">
+                    <h1 style="color: #2D4026; margin: 0; font-size: 24px;">Your Greens are on the Way!</h1>
+                </div>
+                <div class="content" style="padding: 30px;">
+                    <p style="margin-bottom: 20px;">Hi ${customerName},</p>
+                    <p style="margin-bottom: 20px;">This is a friendly reminder that your fresh microgreens delivery is scheduled for tomorrow, <strong>${deliveryDay}</strong>.</p>
+                    
+                    <div class="order-details" style="background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
+                        <h3 style="color: #2D4026; margin-top: 0;">Your Delivery Contents:</h3>
+                        ${orderDetailsHtml}
+                    </div>
+
+                    <p style="margin-top: 20px; margin-bottom: 20px;">Please remember to leave out your cooler bag if you have one. We look forward to delivering to you!</p>
+                ${emailHtmlEnd}
+            `;
+        }
+
+        return { subject, body };
+    }
+
+    /**
+     * Handles the button click to send an email.
+     * Opens the user's default email client.
+     */
+    window.handleSendEmail = function(orderId, templateType) {
+        const order = window.allOrders[orderId];
+        if (!order) {
+            console.error("Order data not found for ID:", orderId);
+            return;
+        }
+
+        const emailTo = order.customerEmail;
+        if (!emailTo) {
+            console.error("No customer email found for this order.");
+            // You could show a small error message on the UI here
+            return;
+        }
+
+        try {
+            const { subject, body } = getEmailTemplate(order, templateType);
+            
+            // We must encode the components for the mailto link
+            const encodedSubject = encodeURIComponent(subject);
+            const encodedBody = encodeURIComponent(body);
+            
+            const mailtoLink = `mailto:${emailTo}?subject=${encodedSubject}&body=${encodedBody}`;
+            
+            // Check if link is too long (browsers have limits, ~2000-8000 chars)
+            if (mailtoLink.length > 2000) {
+                 console.warn("Mailto link is very long and might fail in some browsers.");
+                 // As a fallback, just open with subject, and log body to console
+                 const fallbackLink = `mailto:${emailTo}?subject=${encodedSubject}`;
+                 console.log("Email body was too long. Please copy/paste the following HTML into your email client:");
+                 console.log(body);
+                 window.open(fallbackLink, '_blank');
+            } else {
+                 // Use window.open for better compatibility than window.location.href
+                 window.open(mailtoLink, '_blank');
+            }
+
+        } catch (err) {
+            console.error("Failed to generate email template:", err);
+        }
+    }
+
 
     // Load orders in realtime
     function loadOrders() {
@@ -112,6 +268,9 @@
 
         snapshot.forEach((doc) => {
           const order = doc.data();
+          // Store order data globally for mailto handlers
+          window.allOrders[doc.id] = { ...order, id: doc.id };
+
           const addr = order.deliveryAddress || {};
           const currency = (order.currency || 'usd').toUpperCase();
 
@@ -213,8 +372,37 @@
                           </div>
                       </div>
                   </div>
+              </div> <!-- End of p-6 grid -->
+
+              <!-- NEW: Email Actions Footer -->
+              <div class="bg-gray-50 px-6 py-4 border-t border-gray-100">
+                  <h4 class="font-bold text-gray-700 mb-3 flex items-center uppercase text-xs tracking-wider">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Email Actions
+                  </h4>
+                  <div class="flex flex-wrap gap-3">
+                      <button 
+                          onclick="handleSendEmail('${doc.id}', 'confirmation')"
+                          class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Send Order Confirmation
+                      </button>
+                      <button 
+                          onclick="handleSendEmail('${doc.id}', 'reminder')"
+                          class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Send Delivery Reminder
+                      </button>
+                  </div>
               </div>
-            </div>
+
+            </div> <!-- End of order card -->
           `;
         });
       });
