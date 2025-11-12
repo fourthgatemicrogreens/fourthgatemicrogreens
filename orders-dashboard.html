@@ -1,10 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fourth Gate Orders Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              850: '#1e293b', // Custom card bg
+              900: '#0f172a', // Custom body bg
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for a sleeker look */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a; 
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155; 
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569; 
+    }
+  </style>
   <script type="module">
     // Import Firebase SDK (v9 modular)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -13,7 +44,7 @@
 
     // Firebase Config
    const firebaseConfig = {
-        apiKey: "AIzaSyDcwybZJui1WKAujPclyPgBaj_bE7IK-tg", // <-- PASTE YOUR API KEY HERE
+        apiKey: "[YOUR_API_KEY]", // <-- PASTE YOUR API KEY HERE
         authDomain: "fourth-gate-microgreens.firebaseapp.com",
         projectId: "fourth-gate-microgreens",
         storageBucket: "fourth-gate-microgreens.firebasestorage.app",
@@ -50,7 +81,7 @@
                 console.error("Login failed: " + err.message);
                 const errorEl = document.createElement('div');
                 errorEl.textContent = "Login failed: " + err.message;
-                errorEl.className = "bg-red-100 text-red-700 p-3 rounded-lg fixed top-5 right-5 shadow-lg";
+                errorEl.className = "bg-red-900/80 border border-red-700 text-red-200 p-4 rounded-lg fixed top-5 right-5 shadow-xl backdrop-blur-sm animate-fade-in";
                 document.body.appendChild(errorEl);
                 setTimeout(() => errorEl.remove(), 3000);
             }
@@ -67,10 +98,12 @@
       if (user) {
         authSection.classList.add("hidden");
         dashboardSection.classList.remove("hidden");
+        logoutBtn.classList.remove("hidden");
         loadOrders();
       } else {
         authSection.classList.remove("hidden");
         dashboardSection.classList.add("hidden");
+        logoutBtn.classList.add("hidden");
       }
     });
 
@@ -86,9 +119,9 @@
     }
 
     // Helper to format custom contents
-    // Moved outside loadOrders and attached to window to be accessible by email template generator
+    // UPDATED: Removed hardcoded 'text-gray-800' so it adapts to dark mode here and light mode in emails
     function formatContents(customContents, wheatgrassQty) {
-        let html = '<ul class="list-disc list-inside ml-2 text-gray-800" style="list-style-type: disc; margin-left: 20px; padding-left: 0;">';
+        let html = '<ul class="list-disc list-inside ml-2" style="list-style-type: disc; margin-left: 20px; padding-left: 0;">';
         let hasItems = false;
         if (customContents && Object.keys(customContents).length > 0) {
             for (const [crop, qty] of Object.entries(customContents)) {
@@ -104,7 +137,8 @@
         }
         
         if (!hasItems) {
-            html += '<li style="color: #6b7280; font-style: italic;">No specific items listed</li>';
+            // Using inline color that is readable on both white (email) and slate (dashboard) backgrounds, or handled by parent CSS
+            html += '<li style="opacity: 0.7; font-style: italic;">No specific items listed</li>';
         }
         html += '</ul>';
         return html;
@@ -117,7 +151,6 @@
      */
     function getEmailTemplate(order, templateType) {
         const customerName = order.customerName || 'Valued Customer';
-        // Use the globally available formatContents function
         const orderDetailsHtml = window.formatContents(order.customContents, order.wheatgrassQuantity);
         const deliveryDay = order.deliveryDay || 'your upcoming delivery';
         const total = order.amountTotal ? Number(order.amountTotal).toFixed(2) : 'N/A';
@@ -129,14 +162,16 @@
         // Inline CSS for maximum email client compatibility
         const styles = `
             <style>
-                .container { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+                .container { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background-color: #ffffff; }
                 .header { background-color: #f4f4f4; padding: 20px; text-align: center; border-bottom: 1px solid #ddd; }
                 .header h1 { color: #2D4026; margin: 0; font-size: 24px; }
                 .content { padding: 30px; }
-                .content p { margin-bottom: 20px; }
-                .order-details { background-color: #f9f9f9; padding: 20px; border-radius: 5px; }
+                .content p { margin-bottom: 20px; color: #333; }
+                .order-details { background-color: #f9f9f9; padding: 20px; border-radius: 5px; color: #333; }
                 .order-details h3 { color: #2D4026; margin-top: 0; }
                 .footer { background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #777; }
+                ul { color: #333; }
+                li { color: #333; }
             </style>
         `;
 
@@ -149,7 +184,7 @@
                 ${styles}
             </head>
             <body>
-                <div class="container" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                <div class="container" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
         `;
 
         const emailHtmlEnd = `
@@ -248,7 +283,7 @@
             // You could show a small error message on the UI here
             const errorEl = document.createElement('div');
             errorEl.textContent = "Error: No customer email found for this order.";
-            errorEl.className = "bg-red-100 text-red-700 p-3 rounded-lg fixed top-5 right-5 shadow-lg";
+            errorEl.className = "bg-red-900/80 border border-red-700 text-red-200 p-4 rounded-lg fixed top-5 right-5 shadow-xl backdrop-blur-sm z-50";
             document.body.appendChild(errorEl);
             setTimeout(() => errorEl.remove(), 3000);
             return;
@@ -267,7 +302,6 @@
             let copySuccess = false;
             try {
                 // Fallback: execCommand (synchronous, more likely to work in iframes)
-                // We need a temporary element to copy from
                 const tempEl = document.createElement('div');
                 tempEl.contentEditable = true; // Must be editable
                 tempEl.innerHTML = body;
@@ -298,8 +332,8 @@
 
             // 5. Show a notification
             const message = copySuccess 
-                ? "Email draft opened. The HTML body has been copied to your clipboard. Please paste it into the email."
-                : "Email draft opened. Could not copy body to clipboard. Please copy manually from the console.";
+                ? "📧 Email draft opened! HTML body copied to clipboard. Paste it (Ctrl+V) into the email."
+                : "📧 Email draft opened. Could not copy body. Check console.";
             
             if (!copySuccess) {
                 console.log("--- START OF EMAIL BODY TO COPY ---");
@@ -309,16 +343,18 @@
             
             const notifyEl = document.createElement('div');
             notifyEl.textContent = message;
-            notifyEl.className = (copySuccess ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700') + 
-                                " p-4 rounded-lg fixed top-5 right-5 shadow-lg max-w-sm z-50";
+            notifyEl.className = (copySuccess 
+                ? 'bg-emerald-900/90 border border-emerald-700 text-emerald-200' 
+                : 'bg-yellow-900/90 border border-yellow-700 text-yellow-200') + 
+                " p-4 rounded-lg fixed top-5 right-5 shadow-2xl backdrop-blur-md z-50 font-medium animate-bounce-in";
             document.body.appendChild(notifyEl);
-            setTimeout(() => notifyEl.remove(), 7000); // Give user time to read it
+            setTimeout(() => notifyEl.remove(), 7000);
 
         } catch (err) {
             console.error("Failed to generate email template:", err);
             const errorEl = document.createElement('div');
             errorEl.textContent = "Error: " + err.message;
-            errorEl.className = "bg-red-100 text-red-700 p-3 rounded-lg fixed top-5 right-5 shadow-lg";
+            errorEl.className = "bg-red-900/80 border border-red-700 text-red-200 p-4 rounded-lg fixed top-5 right-5 shadow-xl backdrop-blur-sm z-50";
             document.body.appendChild(errorEl);
             setTimeout(() => errorEl.remove(), 3000);
         }
@@ -331,7 +367,14 @@
       onSnapshot(q, (snapshot) => {
         ordersDiv.innerHTML = "";
         if (snapshot.empty) {
-            ordersDiv.innerHTML = '<div class="text-center py-12 bg-white rounded-xl shadow-sm"><p class="text-gray-500">No orders found yet.</p></div>';
+            ordersDiv.innerHTML = `
+                <div class="text-center py-20 bg-slate-800 rounded-xl border border-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414a1 1 0 00-.707-.293H4" />
+                    </svg>
+                    <p class="text-slate-400 text-lg">No orders found yet.</p>
+                </div>
+            `;
             return;
         }
 
@@ -344,24 +387,27 @@
           const currency = (order.currency || 'usd').toUpperCase();
 
           ordersDiv.innerHTML += `
-            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-6 shadow-sm hover:shadow-md transition-all">
+            <div class="bg-slate-800 border border-slate-700/50 rounded-xl overflow-hidden mb-6 shadow-lg transition-all hover:border-slate-600">
               <!-- Header -->
-              <div class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-100">
+              <div class="bg-slate-800/80 px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/50 backdrop-blur-sm">
                   <div class="mb-2 md:mb-0">
-                      <h3 class="text-lg font-bold text-[#2D4026] flex items-center gap-2">
+                      <h3 class="text-lg font-bold text-slate-100 flex items-center gap-3">
                           ${order.customerName || 'Unknown Customer'}
-                          <span class="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-1 rounded-full">${order.boxType || 'N/A'} Box</span>
+                          <span class="text-xs font-medium text-emerald-300 bg-emerald-900/30 border border-emerald-800 px-2.5 py-0.5 rounded-full uppercase tracking-wide">${order.boxType || 'N/A'} Box</span>
                       </h3>
-                      <a href="mailto:${order.customerEmail}" class="text-sm text-green-600 hover:underline">${order.customerEmail || 'No email'}</a>
+                      <a href="mailto:${order.customerEmail}" class="text-sm text-slate-400 hover:text-emerald-400 transition-colors flex items-center gap-1 mt-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          ${order.customerEmail || 'No email'}
+                      </a>
                   </div>
                   <div class="text-left md:text-right">
-                       <div class="flex items-center gap-2 md:justify-end">
-                           <span class="font-bold text-xl text-[#2D4026]">$${order.amountTotal ? Number(order.amountTotal).toFixed(2) : '0.00'} <span class="text-xs text-gray-400">${currency}</span></span>
-                           <span class="px-3 py-1 ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'} rounded-full text-xs font-bold uppercase tracking-wider">
+                       <div class="flex items-center gap-3 md:justify-end">
+                           <span class="font-bold text-xl text-emerald-400 tracking-tight">$${order.amountTotal ? Number(order.amountTotal).toFixed(2) : '0.00'} <span class="text-xs text-slate-500 font-medium">${currency}</span></span>
+                           <span class="px-3 py-1 ${order.paymentStatus === 'paid' ? 'bg-emerald-900/30 text-emerald-400 border-emerald-800' : 'bg-amber-900/30 text-amber-400 border-amber-800'} border rounded-full text-[10px] font-bold uppercase tracking-wider">
                               ${order.paymentStatus || 'unknown'}
                            </span>
                        </div>
-                       <p class="text-xs text-gray-500 mt-1">Ordered: ${formatDate(order.createdAt)}</p>
+                       <p class="text-xs text-slate-500 mt-1 font-mono">Ordered: ${formatDate(order.createdAt)}</p>
                   </div>
               </div>
 
@@ -369,19 +415,20 @@
               <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                   <!-- Col 1: Order Contents -->
                   <div class="md:col-span-1">
-                      <h4 class="font-bold text-gray-700 mb-3 flex items-center uppercase text-xs tracking-wider">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <h4 class="font-bold text-slate-400 mb-3 flex items-center uppercase text-[11px] tracking-widest">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                           </svg>
                           Contents
                       </h4>
-                      <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+                      <!-- Added specific text color class here so it works in dark mode, while function remains neutral -->
+                      <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 text-slate-300">
                         ${formatContents(order.customContents, order.wheatgrassQuantity)}
                       </div>
                        ${order.rotationFavorites ? `
                         <div class="mt-3">
-                            <h5 class="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">🔄 Rotation Preferences</h5>
-                            <p class="text-sm bg-blue-50 text-blue-900 p-3 rounded-lg border border-blue-100 italic">
+                            <h5 class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1 flex items-center gap-1"><span class="text-lg leading-none">🔄</span> Rotation Preferences</h5>
+                            <p class="text-sm bg-blue-900/20 text-blue-200 p-3 rounded-lg border border-blue-800/50 italic">
                                 "${order.rotationFavorites}"
                             </p>
                         </div>
@@ -390,21 +437,21 @@
 
                   <!-- Col 2: Delivery Info -->
                   <div class="md:col-span-1">
-                      <h4 class="font-bold text-gray-700 mb-3 flex items-center uppercase text-xs tracking-wider">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <h4 class="font-bold text-slate-400 mb-3 flex items-center uppercase text-[11px] tracking-widest">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 00-1-1H9m9 9h1a1 1 0 001-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 001 1h1m9-9h-1a1 1 0 00-1 1v3a1 1 0 01-1 1h-1a1 1 0 01-1-1V6a1 1 0 00-1-1H4a1 1 0 00-1 1v3" />
                           </svg>
                           Delivery
                       </h4>
-                      <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 h-full">
-                          <p class="mb-2">
-                              <span class="text-xs font-bold text-gray-500 uppercase">Preferred Day</span><br>
-                              <span class="font-medium text-gray-900">${order.deliveryDay || 'Not specified'}</span>
+                      <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 h-full">
+                          <p class="mb-4 pb-3 border-b border-slate-700/50">
+                              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Preferred Day</span><br>
+                              <span class="font-medium text-slate-200 text-lg">${order.deliveryDay || 'Not specified'}</span>
                           </p>
-                          <div class="mt-4">
-                              <span class="text-xs font-bold text-gray-500 uppercase">Shipping Address</span>
-                              <address class="not-italic text-sm text-gray-700 mt-1">
-                                  <span class="font-semibold">${addr.recipient_name || order.customerName || ''}</span><br>
+                          <div>
+                              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Shipping Address</span>
+                              <address class="not-italic text-sm text-slate-300 mt-1 leading-relaxed">
+                                  <span class="font-semibold text-white">${addr.recipient_name || order.customerName || ''}</span><br>
                                   ${addr.line1 || ''}<br>
                                   ${addr.line2 ? addr.line2 + '<br>' : ''}
                                   ${addr.city || ''}, ${addr.state || ''} ${addr.postal_code || ''}<br>
@@ -416,65 +463,65 @@
 
                   <!-- Col 3: Stripe/Tech Details -->
                   <div class="md:col-span-1">
-                       <h4 class="font-bold text-gray-700 mb-3 flex items-center uppercase text-xs tracking-wider">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <h4 class="font-bold text-slate-400 mb-3 flex items-center uppercase text-[11px] tracking-widest">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                           System IDs
                       </h4>
-                      <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 text-xs font-mono text-gray-600 space-y-2 overflow-hidden">
+                      <div class="bg-slate-900/30 p-4 rounded-lg border border-slate-800 text-xs font-mono text-slate-500 space-y-3 overflow-hidden">
                           <div>
-                              <span class="font-bold text-gray-400 block">Firebase Order ID</span>
-                              <span class="break-all select-all">${doc.id}</span>
+                              <span class="font-bold text-slate-600 block uppercase text-[10px] mb-0.5">Firebase Order ID</span>
+                              <span class="break-all select-all text-slate-400 hover:text-emerald-400 cursor-pointer transition-colors">${doc.id}</span>
                           </div>
                           <div>
-                              <span class="font-bold text-gray-400 block">Stripe Session ID</span>
-                              <span class="break-all select-all">${order.stripeSessionId || 'N/A'}</span>
+                              <span class="font-bold text-slate-600 block uppercase text-[10px] mb-0.5">Stripe Session ID</span>
+                              <span class="break-all select-all text-slate-400 hover:text-emerald-400 cursor-pointer transition-colors">${order.stripeSessionId || 'N/A'}</span>
                           </div>
                           <div>
-                              <span class="font-bold text-gray-400 block">Stripe Customer ID</span>
-                              <span class="break-all select-all">${order.stripeCustomerId || 'N/A'}</span>
+                              <span class="font-bold text-slate-600 block uppercase text-[10px] mb-0.5">Stripe Customer ID</span>
+                              <span class="break-all select-all text-slate-400 hover:text-emerald-400 cursor-pointer transition-colors">${order.stripeCustomerId || 'N/A'}</span>
                           </div>
                            <div>
-                              <span class="font-bold text-gray-400 block">Stripe Subscription ID</span>
-                              <span class="break-all select-all">${order.subscriptionId || 'N/A'}</span>
+                              <span class="font-bold text-slate-600 block uppercase text-[10px] mb-0.5">Subscription ID</span>
+                              <span class="break-all select-all text-slate-400 hover:text-emerald-400 cursor-pointer transition-colors">${order.subscriptionId || 'N/A'}</span>
                           </div>
                       </div>
                   </div>
               </div> <!-- End of p-6 grid -->
 
               <!-- NEW: Email Actions Footer -->
-              <div class="bg-gray-50 px-6 py-4 border-t border-gray-100">
-                  <h4 class="font-bold text-gray-700 mb-3 flex items-center uppercase text-xs tracking-wider">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <div class="bg-slate-900/40 px-6 py-4 border-t border-slate-700/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <h4 class="font-bold text-slate-400 flex items-center uppercase text-[11px] tracking-widest">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
-                      Email Actions
+                      Actions
                   </h4>
-                  <div class="flex flex-wrap gap-3">
+                  <div class="flex flex-wrap gap-2">
                       <button 
                           onclick="handleSendEmail('${doc.id}', 'confirmation')"
-                          class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          class="bg-blue-600/90 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20 hover:shadow-blue-900/40 transform hover:-translate-y-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          Send Order Confirmation
+                          Order Confirmation
                       </button>
                       <button 
                           onclick="handleSendEmail('${doc.id}', 'reminder')"
-                          class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          class="bg-amber-600/90 hover:bg-amber-500 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-amber-900/20 hover:shadow-amber-900/40 transform hover:-translate-y-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          Send Delivery Reminder
+                          Day Before Reminder
                       </button>
                       <button 
                           onclick="handleSendEmail('${doc.id}', 'completed')"
-                          class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          class="bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-900/20 hover:shadow-emerald-900/40 transform hover:-translate-y-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
-                          Send Delivery Completed
+                          Delivery Completed
                       </button>
                   </div>
               </div>
@@ -486,34 +533,43 @@
     }
   </script>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen p-6">
+<body class="bg-slate-900 font-sans min-h-screen p-6 text-slate-300">
   <div class="max-w-6xl mx-auto">
       <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold text-[#2D4026] flex items-center gap-3">
-            🌱 Fourth Gate <span class="text-gray-500 font-light">Orders Dashboard</span>
+        <h1 class="text-3xl font-bold text-white flex items-center gap-3 tracking-tight">
+            <span class="text-4xl">🌱</span> 
+            <div>
+                <span class="text-emerald-400">Fourth Gate</span> 
+                <span class="text-slate-500 font-light text-2xl block -mt-1">Orders Dashboard</span>
+            </div>
         </h1>
-        <button id="logout-btn" class="hidden bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-6 rounded-lg transition shadow-sm border border-gray-200">
-            Logout
+        <button id="logout-btn" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium py-2.5 px-6 rounded-lg transition shadow-lg border border-slate-700/50">
+            Sign Out
         </button>
       </div>
 
       <!-- Login Section -->
-      <div id="auth-section" class="max-w-md mx-auto bg-white p-10 rounded-2xl shadow-xl mt-20">
+      <div id="auth-section" class="max-w-md mx-auto bg-slate-800/80 backdrop-blur-md p-10 rounded-2xl shadow-2xl border border-slate-700 mt-20">
         <div class="text-center mb-8">
-             <h2 class="text-2xl font-bold text-[#2D4026]">Admin Login</h2>
-             <p class="text-gray-500">Please sign in to view orders</p>
+             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-900/30 text-emerald-400 mb-4">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                 </svg>
+             </div>
+             <h2 class="text-2xl font-bold text-white">Admin Access</h2>
+             <p class="text-slate-400 mt-2">Sign in to manage farm orders</p>
         </div>
         <form id="login-form" class="space-y-5">
           <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Email</label>
-              <input type="email" id="email" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B7235] focus:border-[#3B7235] transition outline-none" placeholder="admin@fourthgate.com" />
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+              <input type="email" id="email" required class="w-full p-3.5 bg-slate-900 border border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition outline-none text-white placeholder-slate-600" placeholder="admin@fourthgate.com" />
           </div>
           <div>
-              <label class="block text-sm font-bold text-gray-700 mb-2">Password</label>
-              <input type="password" id="password" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B7235] focus:border-[#3B7235] transition outline-none" placeholder="••••••••" />
+              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+              <input type="password" id="password" required class="w-full p-3.5 bg-slate-900 border border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition outline-none text-white placeholder-slate-600" placeholder="••••••••" />
           </div>
-          <button type="submit" class="w-full bg-[#3B7235] hover:bg-[#2D5829] text-white font-bold py-4 px-4 rounded-xl transition duration-200 ease-in-out transform hover:scale-[1.02]">
-              Sign In
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-4 rounded-xl transition duration-200 ease-in-out shadow-lg shadow-emerald-900/50 transform hover:scale-[1.01]">
+              Unlock Dashboard
           </button>
         </form>
       </div>
@@ -523,8 +579,8 @@
         <div id="orders">
             <!-- Loading state -->
             <div class="flex flex-col items-center justify-center py-20">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B7235] mb-4"></div>
-                <p class="text-gray-500">Loading orders...</p>
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mb-4"></div>
+                <p class="text-slate-500 animate-pulse">Syncing with farm database...</p>
             </div>
         </div>
       </div>
