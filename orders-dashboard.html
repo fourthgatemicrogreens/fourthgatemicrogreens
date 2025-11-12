@@ -51,6 +51,14 @@
     .animate-fade-in {
         animation: fade-in 0.2s ease-out forwards;
     }
+
+    /* NEW: Filter button styles */
+    .filter-btn {
+        @apply px-5 py-2.5 text-sm font-medium text-slate-300 bg-slate-800 border border-slate-700/50 rounded-lg transition-all shadow-sm hover:bg-slate-700/50;
+    }
+    .filter-btn.active {
+        @apply bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-900/30;
+    }
   </style>
   <script type="module">
     // Import Firebase SDK (v9 modular)
@@ -82,6 +90,14 @@
     const authSection = document.getElementById("auth-section");
     const dashboardSection = document.getElementById("dashboard");
 
+    // NEW: Filter elements
+    const filterAllBtn = document.getElementById("filter-all");
+    const filterTuesdayBtn = document.getElementById("filter-tuesday");
+    const filterWednesdayBtn = document.getElementById("filter-wednesday");
+    const filterThursdayBtn = document.getElementById("filter-thursday");
+    // We select the buttons *after* the DOM is loaded, or we group them differently.
+    // Easiest way is to add listeners after DOM content loaded or just handle it in the auth state change.
+    
     // NEW: Delete Modal elements
     const deleteModal = document.getElementById("delete-modal");
     const modalText = document.getElementById("modal-text");
@@ -91,6 +107,10 @@
 
     // Global store for order data, accessible by onclick handlers
     window.allOrders = {};
+    // NEW: Global state for filtering
+    let currentFilter = 'All';
+    let allDocs = []; // Store raw snapshot docs
+    let filterButtons = []; // Will populate this array later
 
     // Login
     if (loginForm) {
@@ -123,6 +143,23 @@
         authSection.classList.add("hidden");
         dashboardSection.classList.remove("hidden");
         logoutBtn.classList.remove("hidden");
+        
+        // NEW: Initialize filters *after* user is logged in and dashboard is visible
+        if (filterButtons.length === 0) { // Only run this once
+            filterButtons = [
+                document.getElementById("filter-all"),
+                document.getElementById("filter-tuesday"),
+                document.getElementById("filter-wednesday"),
+                document.getElementById("filter-thursday")
+            ];
+            
+            filterButtons.forEach(btn => {
+                if(btn) {
+                    btn.addEventListener('click', () => updateFilter(btn.dataset.filter));
+                }
+            });
+        }
+        
         loadOrders();
       } else {
         authSection.classList.remove("hidden");
@@ -130,6 +167,23 @@
         logoutBtn.classList.add("hidden");
       }
     });
+
+    // NEW: Filter button listener
+    function updateFilter(newFilter) {
+        currentFilter = newFilter;
+        // Update button active states
+        filterButtons.forEach(btn => {
+            if (btn) {
+                if (btn.dataset.filter === currentFilter) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
+        });
+        // Re-render the orders with the new filter
+        renderFilteredOrders();
+    }
 
     // NEW: Delete Modal Listeners
     if (modalCancelBtn) {
@@ -445,12 +499,14 @@
     }
 
 
-    // Load orders in realtime
-    function loadOrders() {
-      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-      onSnapshot(q, (snapshot) => {
-        ordersDiv.innerHTML = "";
-        if (snapshot.empty) {
+    // NEW: RENDER FUNCTION
+    // This function is now responsible for drawing orders based on the current state
+    function renderFilteredOrders() {
+        ordersDiv.innerHTML = ""; // Clear existing orders
+        window.allOrders = {}; // Clear global map for handlers
+        let ordersRendered = 0;
+
+        if (allDocs.length === 0) {
             ordersDiv.innerHTML = `
                 <div class="text-center py-20 bg-slate-800 rounded-xl border border-slate-700">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -462,15 +518,22 @@
             return;
         }
 
-        snapshot.forEach((doc) => {
-          const order = doc.data();
-          // Store order data globally for mailto handlers
-          window.allOrders[doc.id] = { ...order, id: doc.id };
+        allDocs.forEach((doc) => {
+            const order = doc.data();
 
-          const addr = order.deliveryAddress || {};
-          const currency = (order.currency || 'usd').toUpperCase();
+            // The actual filtering logic
+            if (currentFilter !== 'All' && order.deliveryDay !== currentFilter) {
+                return; // Skip this order, it doesn't match the filter
+            }
 
-          ordersDiv.innerHTML += `
+            // Store order data globally for mailto/delete handlers
+            window.allOrders[doc.id] = { ...order, id: doc.id };
+            ordersRendered++;
+
+            const addr = order.deliveryAddress || {};
+            const currency = (order.currency || 'usd').toUpperCase();
+
+            ordersDiv.innerHTML += `
             <div class="bg-slate-800 border border-slate-700/50 rounded-xl overflow-hidden mb-6 shadow-lg transition-all hover:border-slate-600">
               <!-- Header -->
               <div class="bg-slate-800/80 px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/50 backdrop-blur-sm">
@@ -628,6 +691,37 @@
             </div> <!-- End of order card -->
           `;
         });
+
+        // NEW: Handle case where filter returns no results
+        if (ordersRendered === 0 && allDocs.length > 0) {
+            ordersDiv.innerHTML = `
+                <div class="text-center py-20 bg-slate-800 rounded-xl border border-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-slate-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 10.5a.5.5 0 01.5-.5h3a.5.5 0 010 1h-3a.5.5 0 01-.5-.5z" />
+                    </svg>
+                    <p class="text-slate-400 text-lg">No orders match the filter "${currentFilter}".</p>
+                </div>
+            `;
+        }
+    }
+
+    // Load orders in realtime
+    function loadOrders() {
+      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+      
+      // Show loading state initially
+      ordersDiv.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mb-4"></div>
+            <p class="text-slate-500 animate-pulse">Syncing with farm database...</p>
+        </div>
+      `;
+
+      onSnapshot(q, (snapshot) => {
+        // NEW: Store all docs from the snapshot
+        allDocs = snapshot.docs;
+        // NEW: Call the render function, which will apply the filter
+        renderFilteredOrders();
       });
     }
   </script>
@@ -675,6 +769,23 @@
 
       <!-- Dashboard Section -->
       <div id="dashboard" class="hidden">
+        
+        <!-- NEW: Filter Bar -->
+        <div class="mb-6 flex flex-wrap gap-3">
+            <button id="filter-all" data-filter="All" class="filter-btn active">
+                All Orders
+            </button>
+            <button id="filter-tuesday" data-filter="Tuesday" class="filter-btn">
+                Tuesday
+            </button>
+            <button id="filter-wednesday" data-filter="Wednesday" class="filter-btn">
+                Wednesday
+            </button>
+            <button id="filter-thursday" data-filter="Thursday" class="filter-btn">
+                Thursday
+            </button>
+        </div>
+
         <div id="orders">
             <!-- Loading state -->
             <div class="flex flex-col items-center justify-center py-20">
